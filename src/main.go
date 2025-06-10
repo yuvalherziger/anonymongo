@@ -15,7 +15,7 @@ func main() {
 	var outputFile string
 
 	var rootCmd = &cobra.Command{
-		Use:   "anonymongo <sJSON file or gzipped MongoDB log file>",
+		Use:   "anonymongo <JSON file or gzipped MongoDB log file>",
 		Short: "Anonymize MongoDB log files",
 		Long:  `Anonymize MongoDB log files by replacing sensitive information with generic placeholders`,
 		Args:  cobra.ExactArgs(1),
