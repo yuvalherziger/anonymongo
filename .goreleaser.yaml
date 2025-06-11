@@ -53,4 +53,4 @@ homebrew_casks:
     description: "A CLI tool to redact sensitive values from MongoDB log files"
     homepage: "https://github.com/yuvalherziger/homebrew"
     license: "MIT"
-    caveats: "To test the installation, run: anonymongo --version"
+    caveats: "To test the installation, run: anonymongo version"
