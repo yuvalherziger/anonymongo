@@ -23,12 +23,21 @@ func setOptionsRedactedStrings() {
 	SetRedactBooleans(false)
 	SetRedactIPs(false)
 }
+
+func setOptionsRedactedAllWithOverride() {
+	SetRedactedString("<VALUE REDACTED>")
+	SetRedactNumbers(true)
+	SetRedactBooleans(true)
+	SetRedactIPs(true)
+}
+
 func setOptionsRedactedAll() {
 	SetRedactedString("REDACTED")
 	SetRedactNumbers(true)
 	SetRedactBooleans(true)
 	SetRedactIPs(true)
 }
+
 func setOptionsRedactedIPs() {
 	SetRedactedString("REDACTED")
 	SetRedactNumbers(false)
@@ -144,6 +153,36 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				"authTimeMillis":          float64(0),
 				"hookTime":                nil,
 				"totalTimeMillis":         float64(2061),
+			},
+		},
+		{
+			Name:      "Update with nested logical query",
+			InputFile: "test_data/update_with_nested_logical_query.json",
+			Options:   setOptionsRedactedAllWithOverride,
+			ExpectedPaths: map[string]interface{}{
+				"command.query.$and.0.name":                 "<VALUE REDACTED>",
+				"command.query.$and.0.active.$ne":           false,
+				"command.query.$and.1.$or.0.cAt.$lte.$date": "<VALUE REDACTED>",
+				"command.query.$and.1.$or.1.uAt.$lte.$date": "<VALUE REDACTED>",
+				"command.update.$set.uAt.$date":             "<VALUE REDACTED>",
+			},
+		},
+		{
+			Name:      "Simple find with an $in operator",
+			InputFile: "test_data/in_operator.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.foo.$in.0": "REDACTED",
+				"command.filter.foo.$in.1": "REDACTED",
+			},
+		},
+		{
+			Name:      "Simple find with an $elemMatch operator",
+			InputFile: "test_data/elemMatch_operator.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.transactions.$elemMatch.merchantId": float64(0),
+				"command.filter.transactions.$elemMatch.location":   "REDACTED",
 			},
 		},
 	}

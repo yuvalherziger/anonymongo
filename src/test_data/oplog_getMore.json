@@ -1,0 +1,146 @@
+{
+  "t": {
+    "$date": "2025-06-02T13:42:44.138+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn1020",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "local.oplog.rs",
+    "appName": "OplogFetcher",
+    "command": {
+      "getMore": 4161995862922737663,
+      "collection": "oplog.rs",
+      "batchSize": 13981010,
+      "maxTimeMS": 2500,
+      "term": 373,
+      "lastKnownCommittedOpTime": {
+        "ts": {
+          "$timestamp": {
+            "t": 1748136322,
+            "i": 1
+          }
+        },
+        "t": 373
+      },
+      "$replData": 1,
+      "$oplogQueryData": 1,
+      "$readPreference": {
+        "mode": "secondaryPreferred"
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748136322,
+            "i": 1
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "gG/ta6lavoJ1BXPjA0AEnd2Vj8M=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7469113720208097282
+        }
+      },
+      "$db": "local"
+    },
+    "originatingCommand": {
+      "find": "oplog.rs",
+      "filter": {
+        "ts": {
+          "$gte": {
+            "$timestamp": {
+              "t": 1748136312,
+              "i": 2
+            }
+          }
+        }
+      },
+      "batchSize": 13981010,
+      "tailable": true,
+      "awaitData": true,
+      "term": 373,
+      "maxTimeMS": 60000,
+      "readConcern": {
+        "level": "local",
+        "afterClusterTime": {
+          "$timestamp": {
+            "t": 0,
+            "i": 1
+          }
+        }
+      },
+      "$replData": 1,
+      "$oplogQueryData": 1,
+      "$readPreference": {
+        "mode": "secondaryPreferred"
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748136322,
+            "i": 1
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "gG/ta6lavoJ1BXPjA0AEnd2Vj8M=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7469113720208097282
+        }
+      },
+      "$db": "local"
+    },
+    "planSummary": "COLLSCAN",
+    "cursorid": 4161995862922737663,
+    "keysExamined": 0,
+    "docsExamined": 0,
+    "nBatches": 1,
+    "numYields": 2,
+    "nreturned": 0,
+    "queryHash": "AC8BFAA4",
+    "planCacheKey": "AC8BFAA4",
+    "queryFramework": "classic",
+    "reslen": 687,
+    "locks": {
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "r": 3
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "r": 3
+        }
+      }
+    },
+    "readConcern": {
+      "level": "local",
+      "afterClusterTime": {
+        "$timestamp": {
+          "t": 0,
+          "i": 1
+        }
+      },
+      "provenance": "clientSupplied"
+    },
+    "storage": {
+      "data": {
+        "bytesRead": 3576
+      }
+    },
+    "cpuNanos": 315000,
+    "remote": "20.39.242.155:33882",
+    "protocol": "op_msg",
+    "durationMillis": 175
+  }
+}

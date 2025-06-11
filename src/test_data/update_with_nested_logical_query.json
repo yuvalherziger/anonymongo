@@ -1,0 +1,148 @@
+{
+  "t": {
+    "$date": "2025-05-30T09:38:07.725+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn72473",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.my_coll",
+    "appName": "my-app",
+    "command": {
+      "findAndModify": "my_coll",
+      "query": {
+        "$and": [
+          {
+            "name": "Some name",
+            "active": {
+              "$ne": true
+            }
+          },
+          {
+            "$or": [
+              {
+                "uAt": {
+                  "$eq": null
+                },
+                "cAt": {
+                  "$lte": {
+                    "$date": "2025-05-30T09:38:12.155Z"
+                  }
+                }
+              },
+              {
+                "uAt": {
+                  "$lte": {
+                    "$date": "2025-05-30T09:28:07.155Z"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "remove": false,
+      "new": true,
+      "upsert": false,
+      "sort": {
+        "cAt": 1,
+        "foo": -1
+      },
+      "update": {
+        "$set": {
+          "uAt": {
+            "$date": "2025-05-30T09:38:07.155Z"
+          }
+        }
+      },
+      "lsid": {
+        "id": {
+          "$uuid": "a2b7ad5d-e843-4f1c-82d3-d05342d08b56"
+        }
+      },
+      "txnNumber": 51305,
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748597879,
+            "i": 1
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "Iz5P+M/UjJdKTKdZD9dd4pfpvrQ=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7469113720208097282
+        }
+      },
+      "$db": "my_db"
+    },
+    "planSummary": "IXSCAN { name: 1, cAt: 1, foo: -1, uAt: 1, active: 1 }",
+    "keysExamined": 1,
+    "docsExamined": 1,
+    "fromPlanCache": true,
+    "nMatched": 0,
+    "nModified": 0,
+    "nUpserted": 0,
+    "numYields": 0,
+    "reslen": 217,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 1
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "r": 1,
+          "w": 1
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "r": 1,
+          "w": 1
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 1
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 1
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 1
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "writeConcern": {
+      "w": "majority",
+      "wtimeout": 0,
+      "provenance": "implicitDefault"
+    },
+    "waitForWriteConcernDurationMillis": 562,
+    "storage": {},
+    "cpuNanos": 335700,
+    "remote": "20.40.131.128:48246",
+    "protocol": "op_msg",
+    "durationMillis": 562
+  }
+}
