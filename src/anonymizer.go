@@ -116,7 +116,7 @@ func (a *SlowQueryAttr) Anonymize() {
 	// Anonymize $match filters in aggregation pipelines (recursively)
 	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
 		for _, stage := range pipeline {
-			anonymizeMatchStages(stage)
+			anonymizePipelineStage(stage)
 		}
 	}
 
@@ -132,22 +132,17 @@ func (a *SlowQueryAttr) Anonymize() {
 	}
 }
 
-// Recursively anonymize all $match stages in a pipeline stage
-func anonymizeMatchStages(stage interface{}) {
+// Recursively anonymize all values in a pipeline stage, not just $match
+func anonymizePipelineStage(stage interface{}) {
 	switch s := stage.(type) {
 	case map[string]interface{}:
-		for k, v := range s {
-			if k == "$match" {
-				if matchMap, ok := v.(map[string]interface{}); ok {
-					anonymizeQueryValues(matchMap)
-				}
-			} else {
-				anonymizeMatchStages(v)
-			}
+		anonymizeQueryValues(s)
+		for _, v := range s {
+			anonymizePipelineStage(v)
 		}
 	case []interface{}:
 		for _, item := range s {
-			anonymizeMatchStages(item)
+			anonymizePipelineStage(item)
 		}
 	}
 }
