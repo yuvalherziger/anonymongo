@@ -11,4 +11,38 @@ To be added.
 
 ## Usage
 
-To be added.
+Redact logs straight to standard output:
+
+```shell
+anonymongo mongod.log
+```
+
+Redact and write the results to a file:
+
+```shell
+anonymongo mongod.log -o mongod.redacted.log
+```
+
+Redact booleans to constant `false`:
+
+```shell
+anonymongo mongod.log -b
+```
+
+Redact numeric values to constant `0`:
+
+```shell
+anonymongo mongod.log -n
+```
+
+Redact network locations to constant `255.255.255.255:65535`:
+
+```shell
+anonymongo mongod.log -i
+```
+
+Change the default redaction replacement string:
+
+```shell
+anonymongo mongod.log -r "N/A"
+```
