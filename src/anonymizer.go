@@ -50,24 +50,25 @@ func (a *NetworkAttr) Redact() {
 
 // SlowQueryAttr for COMMAND Slow query logs.
 type SlowQueryAttr struct {
-	Type           string                 `json:"type"`
-	Ns             string                 `json:"ns"`
-	Command        map[string]interface{} `json:"command"` // Use map for flexibility, or define a struct for strict typing
-	PlanSummary    string                 `json:"planSummary"`
-	KeysExamined   int                    `json:"keysExamined"`
-	DocsExamined   int                    `json:"docsExamined"`
-	NumYields      int                    `json:"numYields"`
-	QueryHash      string                 `json:"queryHash"`
-	PlanCacheKey   string                 `json:"planCacheKey"`
-	QueryFramework string                 `json:"queryFramework"`
-	Reslen         int                    `json:"reslen"`
-	Locks          map[string]interface{} `json:"locks"`
-	ReadConcern    map[string]interface{} `json:"readConcern"`
-	Storage        map[string]interface{} `json:"storage"`
-	CpuNanos       int64                  `json:"cpuNanos"`
-	Remote         string                 `json:"remote"`
-	Protocol       string                 `json:"protocol"`
-	DurationMillis int                    `json:"durationMillis"`
+	Type               string                 `json:"type"`
+	Ns                 string                 `json:"ns"`
+	Command            map[string]interface{} `json:"command"`
+	OriginatingCommand map[string]interface{} `json:"originatingCommand"`
+	PlanSummary        string                 `json:"planSummary"`
+	KeysExamined       int                    `json:"keysExamined"`
+	DocsExamined       int                    `json:"docsExamined"`
+	NumYields          int                    `json:"numYields"`
+	QueryHash          string                 `json:"queryHash"`
+	PlanCacheKey       string                 `json:"planCacheKey"`
+	QueryFramework     string                 `json:"queryFramework"`
+	Reslen             int                    `json:"reslen"`
+	Locks              map[string]interface{} `json:"locks"`
+	ReadConcern        map[string]interface{} `json:"readConcern"`
+	Storage            map[string]interface{} `json:"storage"`
+	CpuNanos           int64                  `json:"cpuNanos"`
+	Remote             string                 `json:"remote"`
+	Protocol           string                 `json:"protocol"`
+	DurationMillis     int                    `json:"durationMillis"`
 }
 
 type AccessLogAuthSuccessAttr struct {
@@ -97,7 +98,15 @@ func (a *SlowQueryAttr) Redact() {
 		redactQueryValues(cmd)
 	}
 
+	if cmd, ok := a.OriginatingCommand["query"].(map[string]interface{}); ok {
+		redactQueryValues(cmd)
+	}
+
 	if cmd, ok := a.Command["update"].(map[string]interface{}); ok {
+		redactQueryValues(cmd)
+	}
+
+	if cmd, ok := a.OriginatingCommand["update"].(map[string]interface{}); ok {
 		redactQueryValues(cmd)
 	}
 
@@ -109,12 +118,29 @@ func (a *SlowQueryAttr) Redact() {
 		}
 	}
 
+	if updates, ok := a.OriginatingCommand["updates"].([]interface{}); ok {
+		for _, update := range updates {
+			if updateMap, ok := update.(map[string]interface{}); ok {
+				redactQueryValues(updateMap)
+			}
+		}
+	}
+
 	if cmd, ok := a.Command["filter"].(map[string]interface{}); ok {
 		redactQueryValues(cmd)
 	}
 
-	// Redact $match filters in aggregation pipelines (recursively)
+	if cmd, ok := a.OriginatingCommand["filter"].(map[string]interface{}); ok {
+		redactQueryValues(cmd)
+	}
+
 	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
+		for _, stage := range pipeline {
+			redactPipelineStage(stage)
+		}
+	}
+
+	if pipeline, ok := a.OriginatingCommand["pipeline"].([]interface{}); ok {
 		for _, stage := range pipeline {
 			redactPipelineStage(stage)
 		}
@@ -130,12 +156,60 @@ func (a *SlowQueryAttr) Redact() {
 			}
 		}
 	}
+
+	if _, isInsert := a.OriginatingCommand["insert"]; isInsert {
+		if docs, ok := a.OriginatingCommand["documents"].([]interface{}); ok {
+			for _, doc := range docs {
+				if docMap, ok := doc.(map[string]interface{}); ok {
+					redactQueryValues(docMap)
+				}
+			}
+		}
+	}
 }
 
 // Recursively redact all values in a pipeline stage, not just $match
 func redactPipelineStage(stage interface{}) {
 	switch s := stage.(type) {
 	case map[string]interface{}:
+		// $lookup: only redact the $lookup.pipeline array if present
+		if lookup, ok := s["$lookup"].(map[string]interface{}); ok {
+			if pipeline, ok := lookup["pipeline"].([]interface{}); ok {
+				for _, pstage := range pipeline {
+					redactPipelineStage(pstage)
+				}
+			}
+			return
+		}
+		// $project: do not redact top-level numeric values
+		if project, ok := s["$project"].(map[string]interface{}); ok {
+			for k, v := range project {
+				switch vTyped := v.(type) {
+				case map[string]interface{}:
+					redactQueryValues(vTyped)
+				case []interface{}:
+					redactArrayValues(vTyped)
+					project[k] = vTyped
+				default:
+					// Only redact if not a number (float64, int, int64)
+					switch vTyped.(type) {
+					case float64, int, int64:
+						// Do not redact numeric values
+						project[k] = vTyped
+					default:
+						if v != nil {
+							// If it's a string starting with "$", don't redact
+							if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
+								project[k] = v
+							} else {
+								project[k] = redactedValue(v)
+							}
+						}
+					}
+				}
+			}
+			return
+		}
 		redactQueryValues(s)
 		for _, v := range s {
 			redactPipelineStage(v)

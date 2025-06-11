@@ -1,0 +1,135 @@
+{
+  "t": {
+    "$date": "2025-05-30T09:13:52.757+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn1926416",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.my_coll",
+    "appName": "myapp",
+    "command": {
+      "getMore": 8450170943150897632,
+      "collection": "my_coll",
+      "batchSize": 899,
+      "lsid": {
+        "id": {
+          "$uuid": "f77fd864-dcc5-47a6-9a82-f8eadac5c1e5"
+        }
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748596431,
+            "i": 290
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "fBVeD0Ha+sWnxn+Bmj4wTu3YYwk=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7470721408071368705
+        }
+      },
+      "$db": "my_db"
+    },
+    "originatingCommand": {
+      "find": "my_coll",
+      "filter": {
+        "foo": "KPMG",
+        "bar": "1000768774",
+        "$or": [
+          {
+            "status": {
+              "$nin": [
+                "FOO",
+                "BAR",
+                "BAZ"
+              ]
+            }
+          },
+          {
+            "status": "FOO",
+            "nested.stringAttribute": "BAR",
+            "nested.numericAttribute": {
+              "$ne": 4
+            }
+          }
+        ]
+      },
+      "sort": {
+        "_id": -1
+      },
+      "skip": 0,
+      "limit": 1000,
+      "lsid": {
+        "id": {
+          "$uuid": "f77fd864-dcc5-47a6-9a82-f8eadac5c1e5"
+        }
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748596431,
+            "i": 254
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "fBVeD0Ha+sWnxn+Bmj4wTu3YYwk=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7470721408071368705
+        }
+      },
+      "$db": "my_db"
+    },
+    "planSummary": "IXSCAN { bar: 1, foo: 1, created: -1 }",
+    "cursorid": 8450170943150897632,
+    "keysExamined": 29446,
+    "docsExamined": 29446,
+    "fromMultiPlanner": true,
+    "nBatches": 1,
+    "cursorExhausted": true,
+    "numYields": 53,
+    "nreturned": 29,
+    "queryHash": "54A50A01",
+    "planCacheKey": "0640B95D",
+    "queryFramework": "classic",
+    "reslen": 373194,
+    "locks": {
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "r": 54
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "r": 54
+        }
+      }
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "storage": {
+      "data": {
+        "bytesRead": 677336670,
+        "timeReadingMicros": 133585
+      }
+    },
+    "cpuNanos": 587440500,
+    "remote": "20.40.131.128:25061",
+    "protocol": "op_msg",
+    "durationMillis": 652
+  }
+}

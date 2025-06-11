@@ -1,0 +1,143 @@
+{
+  "t": {
+    "$date": "2025-05-30T09:18:41.826+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn1817582",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.my_coll",
+    "appName": "myapp",
+    "command": {
+      "getMore": 1740835182463494919,
+      "collection": "my_coll",
+      "batchSize": 1000,
+      "lsid": {
+        "id": {
+          "$uuid": "17cafdae-ac28-4d5f-9c1f-847228c7bb70"
+        }
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748596721,
+            "i": 34
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "6HtkR1ou2o6WcqrsCn+lnLTzjJk=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7470721408071368705
+        }
+      },
+      "$db": "my_db"
+    },
+    "originatingCommand": {
+      "aggregate": "my_coll",
+      "pipeline": [
+        {
+          "$match": {
+            "str1": "value",
+            "str2": "value",
+            "cAt": {
+              "$gte": {
+                "$date": "2025-01-01T00:00:00.000Z"
+              },
+              "$lte": {
+                "$date": "2025-12-31T23:59:59.999Z"
+              }
+            }
+          }
+        },
+        {
+          "$lookup": {
+            "from": "other_coll",
+            "localField": "id",
+            "foreignField": "_id",
+            "as": "other_docs"
+          }
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "other_docs": 1
+          }
+        }
+      ],
+      "cursor": {},
+      "lsid": {
+        "id": {
+          "$uuid": "17cafdae-ac28-4d5f-9c1f-847228c7bb70"
+        }
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748596720,
+            "i": 82
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "OW65PLG5nAKKLuDgbd8zf1f2D9A=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7470721408071368705
+        }
+      },
+      "$db": "my_db"
+    },
+    "planSummary": "IXSCAN { str1: 1, cAt: 1 }",
+    "cursorid": 1740835182463494919,
+    "keysExamined": 1000,
+    "docsExamined": 1000,
+    "fromPlanCache": true,
+    "nBatches": 1,
+    "numYields": 8,
+    "nreturned": 551,
+    "queryHash": "D653485E",
+    "planCacheKey": "5224BF1F",
+    "queryFramework": "classic",
+    "reslen": 16626441,
+    "locks": {
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "r": 1115
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "r": 1115
+        }
+      }
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "writeConcern": {
+      "w": "majority",
+      "wtimeout": 0,
+      "provenance": "implicitDefault"
+    },
+    "storage": {
+      "data": {
+        "bytesRead": 28868816,
+        "timeReadingMicros": 200581
+      }
+    },
+    "cpuNanos": 97761400,
+    "remote": "20.40.131.128:18233",
+    "protocol": "op_msg",
+    "durationMillis": 283
+  }
+}

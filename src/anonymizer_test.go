@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -45,20 +44,44 @@ func setOptionsRedactedIPs() {
 	SetRedactIPs(true)
 }
 
+// Split path by dots, but allow escaping with backslash
+func splitPath(path string) []string {
+	var parts []string
+	var current string
+	escaped := false
+	for _, r := range path {
+		switch {
+		case escaped:
+			current += string(r)
+			escaped = false
+		case r == '\\':
+			escaped = true
+		case r == '.':
+			parts = append(parts, current)
+			current = ""
+		default:
+			current += string(r)
+		}
+	}
+	parts = append(parts, current)
+	return parts
+}
+
+// Updated getJSONPath to use splitPath
 func getJSONPath(m map[string]interface{}, path string) interface{} {
-	parts := strings.Split(path, ".")
+	parts := splitPath(path)
 	var v interface{} = m
 	for _, p := range parts {
 		switch vv := v.(type) {
 		case map[string]interface{}:
 			v = vv[p]
 		case []interface{}:
+			// Try to parse p as an index
 			idx, err := strconv.Atoi(p)
-			if err == nil && idx < len(vv) {
-				v = vv[idx]
-			} else {
+			if err != nil || idx < 0 || idx >= len(vv) {
 				return nil
 			}
+			v = vv[idx]
 		default:
 			return nil
 		}
@@ -183,6 +206,34 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.transactions.$elemMatch.merchantId": float64(0),
 				"command.filter.transactions.$elemMatch.location":   "REDACTED",
+			},
+		},
+		{
+			Name:      "find with getMore",
+			InputFile: "test_data/getMore.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"originatingCommand.filter.foo":                                 "REDACTED",
+				"originatingCommand.filter.bar":                                 "REDACTED",
+				"originatingCommand.filter.$or.0.status.$nin.0":                 "REDACTED",
+				"originatingCommand.filter.$or.0.status.$nin.1":                 "REDACTED",
+				"originatingCommand.filter.$or.0.status.$nin.2":                 "REDACTED",
+				"originatingCommand.filter.$or.1.status":                        "REDACTED",
+				"originatingCommand.filter.$or.1.nested\\.stringAttribute":      "REDACTED",
+				"originatingCommand.filter.$or.1.nested\\.numericAttribute.$ne": float64(0),
+			},
+		},
+		{
+			Name:      "aggregate with getMore",
+			InputFile: "test_data/getMore_aggregate.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"originatingCommand.pipeline.0.$match.str1":           "REDACTED",
+				"originatingCommand.pipeline.0.$match.str2":           "REDACTED",
+				"originatingCommand.pipeline.0.$match.cAt.$gte.$date": "REDACTED",
+				"originatingCommand.pipeline.0.$match.cAt.$lte.$date": "REDACTED",
+				"originatingCommand.pipeline.1.$lookup.from":          "other_coll",
+				"originatingCommand.pipeline.2.$project.other_docs":   float64(1),
 			},
 		},
 	}
