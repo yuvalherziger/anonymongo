@@ -18,14 +18,14 @@ type LogEntry struct {
 
 // Attr is an interface for different attr types.
 type Attr interface {
-	Anonymize()
+	Redact()
 }
 
 type UnknownAttr struct {
 	Raw json.RawMessage `json:"-"`
 }
 
-func (a *UnknownAttr) Anonymize() {}
+func (a *UnknownAttr) Redact() {}
 
 func (a *UnknownAttr) MarshalJSON() ([]byte, error) {
 	if a.Raw == nil {
@@ -42,8 +42,8 @@ type NetworkAttr struct {
 	ConnectionCount int         `json:"connectionCount"`
 }
 
-func (a *NetworkAttr) Anonymize() {
-	if anonymizeIPs && a.Remote != "" {
+func (a *NetworkAttr) Redact() {
+	if redactIPs && a.Remote != "" {
 		a.Remote = "255.255.255.255:65535"
 	}
 }
@@ -82,84 +82,84 @@ type AccessLogAuthSuccessAttr struct {
 	ExtraInfo       map[string]interface{} `json:"extraInfo"`
 }
 
-func (a *AccessLogAuthSuccessAttr) Anonymize() {
-	if a.Client != "" && anonymizeIPs {
+func (a *AccessLogAuthSuccessAttr) Redact() {
+	if a.Client != "" && redactIPs {
 		a.Client = "255.255.255.255:65535"
 	}
 }
 
-func (a *SlowQueryAttr) Anonymize() {
-	if anonymizeIPs {
+func (a *SlowQueryAttr) Redact() {
+	if redactIPs {
 		a.Remote = "255.255.255.255:65535"
 	}
 
 	if cmd, ok := a.Command["query"].(map[string]interface{}); ok {
-		anonymizeQueryValues(cmd)
+		redactQueryValues(cmd)
 	}
 
 	if cmd, ok := a.Command["update"].(map[string]interface{}); ok {
-		anonymizeQueryValues(cmd)
+		redactQueryValues(cmd)
 	}
 
 	if updates, ok := a.Command["updates"].([]interface{}); ok {
 		for _, update := range updates {
 			if updateMap, ok := update.(map[string]interface{}); ok {
-				anonymizeQueryValues(updateMap)
+				redactQueryValues(updateMap)
 			}
 		}
 	}
 
 	if cmd, ok := a.Command["filter"].(map[string]interface{}); ok {
-		anonymizeQueryValues(cmd)
+		redactQueryValues(cmd)
 	}
 
-	// Anonymize $match filters in aggregation pipelines (recursively)
+	// Redact $match filters in aggregation pipelines (recursively)
 	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
 		for _, stage := range pipeline {
-			anonymizePipelineStage(stage)
+			redactPipelineStage(stage)
 		}
 	}
 
-	// Anonymize "documents" in insert commands
+	// Redact "documents" in insert commands
 	if _, isInsert := a.Command["insert"]; isInsert {
 		if docs, ok := a.Command["documents"].([]interface{}); ok {
 			for _, doc := range docs {
 				if docMap, ok := doc.(map[string]interface{}); ok {
-					anonymizeQueryValues(docMap)
+					redactQueryValues(docMap)
 				}
 			}
 		}
 	}
 }
 
-// Recursively anonymize all values in a pipeline stage, not just $match
-func anonymizePipelineStage(stage interface{}) {
+// Recursively redact all values in a pipeline stage, not just $match
+func redactPipelineStage(stage interface{}) {
 	switch s := stage.(type) {
 	case map[string]interface{}:
-		anonymizeQueryValues(s)
+		redactQueryValues(s)
 		for _, v := range s {
-			anonymizePipelineStage(v)
+			redactPipelineStage(v)
 		}
 	case []interface{}:
 		for _, item := range s {
-			anonymizePipelineStage(item)
+			redactPipelineStage(item)
 		}
 	}
 }
 
-// Recursively anonymize all leaf values in the query object, except nulls
-func anonymizeQueryValues(obj map[string]interface{}) {
+// Recursively redact all leaf values in the query object, except nulls
+func redactQueryValues(obj map[string]interface{}) {
 	for k, v := range obj {
 		switch val := v.(type) {
 		case map[string]interface{}:
-			anonymizeQueryValues(val)
+			redactQueryValues(val)
 		case []interface{}:
 			for i, item := range val {
 				switch itemTyped := item.(type) {
 				case map[string]interface{}:
-					anonymizeQueryValues(itemTyped)
+					redactQueryValues(itemTyped)
 				case []interface{}:
-					anonymizeArrayValues(itemTyped)
+					redactArrayValues(itemTyped)
 					val[i] = itemTyped
 				default:
 					if item != nil {
@@ -167,7 +167,7 @@ func anonymizeQueryValues(obj map[string]interface{}) {
 						if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
 							val[i] = item
 						} else {
-							val[i] = anonymizedValue(item)
+							val[i] = redactedValue(item)
 						}
 					}
 				}
@@ -180,21 +180,21 @@ func anonymizeQueryValues(obj map[string]interface{}) {
 				if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
 					obj[k] = v
 				} else {
-					obj[k] = anonymizedValue(v)
+					obj[k] = redactedValue(v)
 				}
 			}
 		}
 	}
 }
 
-// Helper to recursively anonymize arrays of values
-func anonymizeArrayValues(arr []interface{}) {
+// Helper to recursively redact arrays of values
+func redactArrayValues(arr []interface{}) {
 	for i, item := range arr {
 		switch itemTyped := item.(type) {
 		case map[string]interface{}:
-			anonymizeQueryValues(itemTyped)
+			redactQueryValues(itemTyped)
 		case []interface{}:
-			anonymizeArrayValues(itemTyped)
+			redactArrayValues(itemTyped)
 			arr[i] = itemTyped
 		default:
 			if item != nil {
@@ -202,36 +202,36 @@ func anonymizeArrayValues(arr []interface{}) {
 				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
 					arr[i] = item
 				} else {
-					arr[i] = anonymizedValue(item)
+					arr[i] = redactedValue(item)
 				}
 			}
 		}
 	}
 }
 
-var anonymizedString = "REDACTED"
-var anonymizeNumbers = false
-var anonymizeBooleans = false
-var anonymizeIPs = false
+var redactedString = "REDACTED"
+var redactNumbers = false
+var redactBooleans = false
+var redactIPs = false
 
-func SetAnonymizedString(s string) {
-	anonymizedString = s
+func SetRedactedString(s string) {
+	redactedString = s
 }
 
-func SetAnonymizeNumbers(b bool) {
-	anonymizeNumbers = b
+func SetRedactNumbers(b bool) {
+	redactNumbers = b
 }
 
-func SetAnonymizeBooleans(b bool) {
-	anonymizeBooleans = b
+func SetRedactBooleans(b bool) {
+	redactBooleans = b
 }
 
-func SetAnonymizeIPs(b bool) {
-	anonymizeIPs = b
+func SetRedactIPs(b bool) {
+	redactIPs = b
 }
 
-// Return a generic anonymized value based on the type
-func anonymizedValue(v interface{}) interface{} {
+// Return a generic redacted value based on the type
+func redactedValue(v interface{}) interface{} {
 	switch val := v.(type) {
 	case string:
 		// Check if it's a 24-character hex string (MongoDB ObjectID)
@@ -248,29 +248,29 @@ func anonymizedValue(v interface{}) interface{} {
 				return "000000000000000000000000"
 			}
 		}
-		return anonymizedString
+		return redactedString
 	case float64:
-		if anonymizeNumbers {
+		if redactNumbers {
 			return 0
 		}
 		return v
 	case int:
-		if anonymizeNumbers {
+		if redactNumbers {
 			return 0
 		}
 		return v
 	case int64:
-		if anonymizeNumbers {
+		if redactNumbers {
 			return 0
 		}
 		return v
 	case bool:
-		if anonymizeBooleans {
+		if redactBooleans {
 			return false
 		}
 		return v
 	default:
-		return anonymizedString
+		return redactedString
 	}
 }
 
@@ -321,14 +321,14 @@ func (l *LogEntry) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// AnonymizeMongoLog takes a JSON string, anonymizes remote, and returns the modified object.
-func AnonymizeMongoLog(jsonStr string) (*LogEntry, error) {
+// RedactMongoLog takes a JSON string, redacts remote, and returns the modified object.
+func RedactMongoLog(jsonStr string) (*LogEntry, error) {
 	var entry LogEntry
 	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
 		return nil, err
 	}
 	if entry.Attr != nil {
-		entry.Attr.Anonymize()
+		entry.Attr.Redact()
 	}
 	return &entry, nil
 }

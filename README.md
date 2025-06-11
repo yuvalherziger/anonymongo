@@ -3,7 +3,7 @@
 [![Tests](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml)
 [![Build](https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml)
 
-Anonymize MongoDB log files before sharing them, and preserve value types and formats.
+Redact sensitive values from MongoDB log files before sharing them, and preserve value types and formats.
 
 ## Installation
 
@@ -24,18 +24,18 @@ To be added
 tl;dr: `anonymongo --help`
 
 ```
-Anonymize MongoDB log files by replacing sensitive information with generic placeholders
+Redact MongoDB log files by replacing sensitive information with generic placeholders
 
 Usage:
   anonymongo <JSON file or gzipped MongoDB log file> [flags] 
 
 Flags:
-  -b, --anonymizeBooleans    Anonymize boolean values to false
-  -i, --anonymizeIPs         Anonymize IP addresses to 255.255.255.255
-  -n, --anonymizeNumbers     Anonymize numeric values to 0
+  -b, --redactBooleans    Redact boolean values to false
+  -i, --redactIPs         Redact IP addresses to 255.255.255.255
+  -n, --redactNumbers     Redact numeric values to 0
   -h, --help                 help for anonymongo
   -o, --outputFile string    Write output to file instead of stdout
-  -r, --replacement string   Replacement string for anonymized values (default "REDACTED")
+  -r, --replacement string   Replacement string for redacted values (default "REDACTED")
 ```
 
 Examples:
@@ -59,7 +59,7 @@ anonymongo mongod.log -r "some other redaction placehoder"
 ## Tests
 
 Every new refactoring case must be covered by a test to ensure the expected results are yielded and no
-regression is introducesd. The source code contains a single unit test: [./src/anonymizer_test.go](./src/anonymizer_test.go).
+regression is introducesd. The source code contains a single unit test: [./src/redactr_test.go](./src/redactr_test.go).
 It's a parameterized unit test, where each test is a go struct with the following information:
 
 * Test name (e.g., "$expr reduction inside $lookup stage")

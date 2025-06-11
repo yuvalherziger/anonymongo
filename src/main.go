@@ -7,24 +7,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev" // override at build: go build -ldflags "-X main.version=1.2.3"
+
 func main() {
 	var replacement string
-	var anonymizeNumbers bool
-	var anonymizeBooleans bool
-	var anonymizeIPs bool
+	var redactNumbers bool
+	var redactBooleans bool
+	var redactIPs bool
 	var outputFile string
 
 	var rootCmd = &cobra.Command{
 		Use:   "anonymongo <JSON file or gzipped MongoDB log file>",
-		Short: "Anonymize MongoDB log files",
-		Long:  `Anonymize MongoDB log files by replacing sensitive information with generic placeholders`,
+		Short: "Redact MongoDB log files",
+		Long:  `Redact MongoDB log files by replacing sensitive information with generic placeholders`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			logFilePath := args[0]
-			SetAnonymizedString(replacement)
-			SetAnonymizeNumbers(anonymizeNumbers)
-			SetAnonymizeIPs(anonymizeIPs)
-			SetAnonymizeBooleans(true)
+			SetRedactedString(replacement)
+			SetRedactNumbers(redactNumbers)
+			SetRedactIPs(redactIPs)
+			SetRedactBooleans(true)
 
 			var outWriter *os.File
 			var err error
@@ -46,10 +48,20 @@ func main() {
 		},
 	}
 
-	rootCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for anonymized values")
-	rootCmd.Flags().BoolVarP(&anonymizeNumbers, "anonymizeNumbers", "n", false, "Anonymize numeric values to 0")
-	rootCmd.Flags().BoolVarP(&anonymizeBooleans, "anonymizeBooleans", "b", false, "Anonymize boolean values to false")
-	rootCmd.Flags().BoolVarP(&anonymizeIPs, "anonymizeIPs", "i", false, "Anonymize IP addresses to 255.255.255.255")
+	var versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("anonymongo version", version)
+		},
+	}
+
+	rootCmd.AddCommand(versionCmd)
+
+	rootCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for redacted values")
+	rootCmd.Flags().BoolVarP(&redactNumbers, "redactNumbers", "n", false, "Redact numeric values to 0")
+	rootCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
+	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact IP addresses to 255.255.255.255")
 	rootCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
 
 	if err := rootCmd.Execute(); err != nil {

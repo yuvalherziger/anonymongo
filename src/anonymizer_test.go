@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// Test case definition for parameterized anonymizer tests
-type AnonymizeTestCase struct {
+// Test case definition for parameterized redactr tests
+type RedactTestCase struct {
 	Name          string
 	InputFile     string
 	Options       func()
@@ -18,22 +18,22 @@ type AnonymizeTestCase struct {
 
 // Example option sets
 func setOptionsRedactedStrings() {
-	SetAnonymizedString("REDACTED")
-	SetAnonymizeNumbers(false)
-	SetAnonymizeBooleans(false)
-	SetAnonymizeIPs(false)
+	SetRedactedString("REDACTED")
+	SetRedactNumbers(false)
+	SetRedactBooleans(false)
+	SetRedactIPs(false)
 }
 func setOptionsRedactedAll() {
-	SetAnonymizedString("REDACTED")
-	SetAnonymizeNumbers(true)
-	SetAnonymizeBooleans(true)
-	SetAnonymizeIPs(true)
+	SetRedactedString("REDACTED")
+	SetRedactNumbers(true)
+	SetRedactBooleans(true)
+	SetRedactIPs(true)
 }
 func setOptionsRedactedIPs() {
-	SetAnonymizedString("REDACTED")
-	SetAnonymizeNumbers(false)
-	SetAnonymizeBooleans(false)
-	SetAnonymizeIPs(true)
+	SetRedactedString("REDACTED")
+	SetRedactNumbers(false)
+	SetRedactBooleans(false)
+	SetRedactIPs(true)
 }
 
 func getJSONPath(m map[string]interface{}, path string) interface{} {
@@ -57,8 +57,8 @@ func getJSONPath(m map[string]interface{}, path string) interface{} {
 	return v
 }
 
-func TestAnonymizeMongoLog_Parameterized(t *testing.T) {
-	cases := []AnonymizeTestCase{
+func TestRedactMongoLog_Parameterized(t *testing.T) {
+	cases := []RedactTestCase{
 		{
 			Name:      "Simple find",
 			InputFile: "test_data/simple_find.json",
@@ -141,9 +141,9 @@ func TestAnonymizeMongoLog_Parameterized(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read test log file: %v", err)
 			}
-			entry, err := AnonymizeMongoLog(string(data))
+			entry, err := RedactMongoLog(string(data))
 			if err != nil {
-				t.Fatalf("AnonymizeMongoLog failed: %v", err)
+				t.Fatalf("RedactMongoLog failed: %v", err)
 			}
 			// Marshal Attr back to JSON for path extraction
 			attrBytes, _ := json.Marshal(entry.Attr)

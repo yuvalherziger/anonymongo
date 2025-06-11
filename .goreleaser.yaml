@@ -39,3 +39,18 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+homebrew_casks:
+  -
+    name: anonymongo
+    repository:
+      owner: yuvalherziger
+      name: homebrew-anonymongo
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    description: "A CLI tool to redact sensitive values from MongoDB log files"
+    homepage: "https://github.com/yuvalherziger/homebrew"
+    license: "MIT"
+    caveats: "To test the installation, run: anonymongo --version"

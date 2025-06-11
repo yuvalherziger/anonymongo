@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// ProcessMongoLogFile reads a MongoDB log file line-by-line, anonymizes each entry, and writes the result to the provided writer.
+// ProcessMongoLogFile reads a MongoDB log file line-by-line, redacts each entry, and writes the result to the provided writer.
 // It supports both plain JSON files and gzipped JSON files (.gz).
 func ProcessMongoLogFile(filePath string, outWriter io.Writer) error {
 	var file *os.File
@@ -39,14 +39,14 @@ func ProcessMongoLogFile(filePath string, outWriter io.Writer) error {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		anonymized, err := AnonymizeMongoLog(line)
+		redacted, err := RedactMongoLog(line)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to anonymize line: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to redact line: %v\n", err)
 			continue
 		}
-		out, err := json.Marshal(anonymized)
+		out, err := json.Marshal(redacted)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to marshal anonymized log: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to marshal redacted log: %v\n", err)
 			continue
 		}
 		fmt.Fprintln(outWriter, string(out))
