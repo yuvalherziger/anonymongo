@@ -1,11 +1,14 @@
 # anonymongo
 
-Anonymize MongoDB log files before sharing them.
+[![Tests](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml)
+[![Build](https://github.com/yuvalherziger/anonymongo/actions/workflows/publish.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/publish.yml)
+
+Anonymize MongoDB log files before sharing them, and preserve value types and formats.
 
 ## Installation
 
-TODO
+To be added.
 
 ## Usage
 
-TODO
+To be added.
