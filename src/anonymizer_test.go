@@ -119,7 +119,7 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			},
 		},
 		{
-			Name:      "InsertsRedacted",
+			Name:      "Inserts redacted",
 			InputFile: "test_data/inserts.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
@@ -130,6 +130,20 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				"command.documents.0.emb_doc_arr.0.foo":             "REDACTED",
 				"command.documents.0.emb_doc_arr.0.bar":             false,
 				"command.documents.0.emb_doc_arr.0.timestamp.$date": "REDACTED",
+			},
+		},
+		{
+			Name:      "No-op log stays unchanges",
+			InputFile: "test_data/asio_log.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"hostAndPort":             "atlas-okh9ti-shard-00-01.y13gh.mongodb.net:27017",
+				"dnsResolutionTimeMillis": float64(7),
+				"tcpConnectionTimeMillis": float64(2043),
+				"tlsHandshakeTimeMillis":  float64(11),
+				"authTimeMillis":          float64(0),
+				"hookTime":                nil,
+				"totalTimeMillis":         float64(2061),
 			},
 		},
 	}

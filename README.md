@@ -51,42 +51,42 @@ To build and run `anonymongo` from source, follow these steps:
 
 1. Clone the repository
 
-  ```shell
-  git clone https://github.com/yuvalherziger/anonymongo.git
-  cd anonymongo
-  ```
+    ```shell
+    git clone https://github.com/yuvalherziger/anonymongo.git
+    cd anonymongo
+    ```
 
 2. Build the binary
 
-  Ensure you have [Go](https://golang.org/dl/) (version 1.18 or higher) installed.
+    Ensure you have [Go](https://golang.org/dl/) (version 1.18 or higher) installed.
 
-  ```shell
-  go build -o anonymongo ./src
-  ```
+    ```shell
+    go build -o anonymongo ./src
+    ```
 
-  This will create an executable named `anonymongo` in the project root.
+    This will create an executable named `anonymongo` in the project root.
 
 3. **Run the application**
 
-  You can now run `anonymongo` directly:
+    You can now run `anonymongo` directly:
 
-  ```shell
-  ./anonymongo --help
-  ```
+    ```shell
+    ./anonymongo --help
+    ```
 
-  Or process a log file:
+    Or process a log file:
 
-  ```shell
-  ./anonymongo path/to/mongod.log
-  ```
+    ```shell
+    ./anonymongo path/to/mongod.log
+    ```
 
 4. **(Optional) Run tests**
 
-  To verify your build, run the tests:
+    To verify your build, run the tests:
 
-  ```shell
-  go test -v ./src/
-  ```
+    ```shell
+    go test -v ./src/
+    ```
 
 For more build options or troubleshooting, see the [Go documentation](https://golang.org/doc/).
 
@@ -98,15 +98,23 @@ tl;dr: `anonymongo --help`
 Redact MongoDB log files by replacing sensitive information with generic placeholders
 
 Usage:
-  anonymongo <JSON file or gzipped MongoDB log file> [flags] 
+  anonymongo <JSON file or gzipped MongoDB log file> [flags]
+  anonymongo [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  version     Print the version number
 
 Flags:
-  -b, --redactBooleans    Redact boolean values to false
-  -i, --redactIPs         Redact IP addresses to 255.255.255.255
-  -n, --redactNumbers     Redact numeric values to 0
   -h, --help                 help for anonymongo
   -o, --outputFile string    Write output to file instead of stdout
+  -b, --redactBooleans       Redact boolean values to false
+  -i, --redactIPs            Redact IP addresses to 255.255.255.255
+  -n, --redactNumbers        Redact numeric values to 0
   -r, --replacement string   Replacement string for redacted values (default "REDACTED")
+
+Use "anonymongo [command] --help" for more information about a command.
 ```
 
 Examples:
@@ -124,7 +132,7 @@ anonymongo mongod.log -n
 # Redact network locations to constant `255.255.255.255:65535`
 anonymongo mongod.log -i
 # Change the default redaction replacement string
-anonymongo mongod.log -r "some other redaction placehoder"
+anonymongo mongod.log -r "some other redaction placeholder"
 ```
 
 ## 3. Tests
@@ -133,7 +141,7 @@ Every new refactoring case must be covered by a test to ensure the expected resu
 regression is introducesd. The source code contains a single unit test: [./src/redactr_test.go](./src/redactr_test.go).
 It's a parameterized unit test, where each test is a go struct with the following information:
 
-* Test name (e.g., "$expr reduction inside $lookup stage")
+* Test name (e.g., "$expr redaction inside $lookup stage")
 * Input file: a relative path to a JSON text file input containing a single log entry
 * Options: a preset function to determine the conditions for the test (e.g., flags, overrides, etc.)
 * A mapping of JSON paths and their expected post-redaction values.
@@ -142,7 +150,7 @@ Below is an example of such element you can append to the parameterized cases:
 
 ```go
 {
-  Name:          "$expr reduction inside $lookup stage",
+  Name:          "$expr redaction inside $lookup stage",
   InputFile:     "test_data/expr_in_lookup_pipeline.json",
   Options:       setOptionsRedactedStrings,
   ExpectedPaths: map[string]interface{}{

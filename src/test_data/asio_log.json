@@ -1,0 +1,19 @@
+{
+  "t": {
+    "$date": "2025-05-30T19:40:04.325+00:00"
+  },
+  "s": "I",
+  "c": "ASIO",
+  "id": 6496400,
+  "ctx": "ReplNetwork",
+  "msg": "Slow connection establishment",
+  "attr": {
+    "hostAndPort": "atlas-okh9ti-shard-00-01.y13gh.mongodb.net:27017",
+    "dnsResolutionTimeMillis": 7,
+    "tcpConnectionTimeMillis": 2043,
+    "tlsHandshakeTimeMillis": 11,
+    "authTimeMillis": 0,
+    "hookTime": null,
+    "totalTimeMillis": 2061
+  }
+}
