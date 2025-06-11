@@ -93,12 +93,19 @@ func (a *SlowQueryAttr) Anonymize() {
 		a.Remote = "255.255.255.255:65535"
 	}
 
-	// Anonymize "query" inside "command" if present
 	if cmd, ok := a.Command["query"].(map[string]interface{}); ok {
 		anonymizeQueryValues(cmd)
 	}
 
 	if cmd, ok := a.Command["update"].(map[string]interface{}); ok {
+		anonymizeQueryValues(cmd)
+	}
+
+	if cmd, ok := a.Command["updates"].(map[string]interface{}); ok {
+		anonymizeQueryValues(cmd)
+	}
+
+	if cmd, ok := a.Command["filter"].(map[string]interface{}); ok {
 		anonymizeQueryValues(cmd)
 	}
 
