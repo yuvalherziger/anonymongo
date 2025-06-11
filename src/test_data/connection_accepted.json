@@ -1,0 +1,20 @@
+{
+  "t": {
+    "$date": "2025-05-30T09:37:49.752+00:00"
+  },
+  "s": "I",
+  "c": "NETWORK",
+  "id": 22943,
+  "ctx": "listener",
+  "msg": "Connection accepted",
+  "attr": {
+    "remote": "192.168.254.24:44856",
+    "uuid": {
+      "uuid": {
+        "$uuid": "e62960d3-533e-4511-909f-114b2a030484"
+      }
+    },
+    "connectionId": 216952,
+    "connectionCount": 1195
+  }
+}

@@ -101,8 +101,12 @@ func (a *SlowQueryAttr) Anonymize() {
 		anonymizeQueryValues(cmd)
 	}
 
-	if cmd, ok := a.Command["updates"].(map[string]interface{}); ok {
-		anonymizeQueryValues(cmd)
+	if updates, ok := a.Command["updates"].([]interface{}); ok {
+		for _, update := range updates {
+			if updateMap, ok := update.(map[string]interface{}); ok {
+				anonymizeQueryValues(updateMap)
+			}
+		}
 	}
 
 	if cmd, ok := a.Command["filter"].(map[string]interface{}); ok {
@@ -155,15 +159,56 @@ func anonymizeQueryValues(obj map[string]interface{}) {
 		case map[string]interface{}:
 			anonymizeQueryValues(val)
 		case []interface{}:
-			for _, item := range val {
-				if m, ok := item.(map[string]interface{}); ok {
-					anonymizeQueryValues(m)
+			for i, item := range val {
+				switch itemTyped := item.(type) {
+				case map[string]interface{}:
+					anonymizeQueryValues(itemTyped)
+				case []interface{}:
+					anonymizeArrayValues(itemTyped)
+					val[i] = itemTyped
+				default:
+					if item != nil {
+						// If it's a string starting with "$", don't redact
+						if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
+							val[i] = item
+						} else {
+							val[i] = anonymizedValue(item)
+						}
+					}
 				}
 			}
+			obj[k] = val
 		default:
 			// Only replace if not nil (null in JSON)
 			if v != nil {
-				obj[k] = anonymizedValue(v)
+				// If it's a string starting with "$", don't redact
+				if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
+					obj[k] = v
+				} else {
+					obj[k] = anonymizedValue(v)
+				}
+			}
+		}
+	}
+}
+
+// Helper to recursively anonymize arrays of values
+func anonymizeArrayValues(arr []interface{}) {
+	for i, item := range arr {
+		switch itemTyped := item.(type) {
+		case map[string]interface{}:
+			anonymizeQueryValues(itemTyped)
+		case []interface{}:
+			anonymizeArrayValues(itemTyped)
+			arr[i] = itemTyped
+		default:
+			if item != nil {
+				// If it's a string starting with "$", don't redact
+				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
+					arr[i] = item
+				} else {
+					arr[i] = anonymizedValue(item)
+				}
 			}
 		}
 	}
@@ -192,8 +237,22 @@ func SetAnonymizeIPs(b bool) {
 
 // Return a generic anonymized value based on the type
 func anonymizedValue(v interface{}) interface{} {
-	switch v.(type) {
+	switch val := v.(type) {
 	case string:
+		// Check if it's a 24-character hex string (MongoDB ObjectID)
+		if len(val) == 24 {
+			isHex := true
+			for i := 0; i < 24; i++ {
+				c := val[i]
+				if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+					isHex = false
+					break
+				}
+			}
+			if isHex {
+				return "000000000000000000000000"
+			}
+		}
 		return anonymizedString
 	case float64:
 		if anonymizeNumbers {

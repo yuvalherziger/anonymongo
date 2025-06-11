@@ -1,0 +1,188 @@
+{
+  "t": {
+    "$date": "2025-05-30T09:38:14.390+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn87096",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.my_coll",
+    "command": {
+      "insert": "my_coll",
+      "documents": [
+        {
+          "foo": "some string",
+          "bar": true,
+          "timestamp": {
+            "$date": "2025-05-30T09:38:14.390Z"
+          },
+          "val_arr": ["a", "b", "c", "d", "e"],
+          "emb_doc_arr": [
+            {
+              "foo": "some string",
+              "bar": true,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            },
+            {
+              "foo": "another string",
+              "bar": false,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            }
+          ]
+        },
+        {
+          "foo": "some string",
+          "bar": true,
+          "timestamp": {
+            "$date": "2025-05-30T09:38:14.390Z"
+          },
+          "val_arr": ["a", "b", "c", "d", "e"],
+          "emb_doc_arr": [
+            {
+              "foo": "some string",
+              "bar": true,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            },
+            {
+              "foo": "another string",
+              "bar": false,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            }
+          ]
+        },
+        {
+          "foo": "some string",
+          "bar": true,
+          "timestamp": {
+            "$date": "2025-05-30T09:38:14.390Z"
+          },
+          "val_arr": ["a", "b", "c", "d", "e"],
+          "emb_doc_arr": [
+            {
+              "foo": "some string",
+              "bar": true,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            },
+            {
+              "foo": "another string",
+              "bar": false,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            }
+          ]
+        },
+        {
+          "foo": "some string",
+          "bar": true,
+          "timestamp": {
+            "$date": "2025-05-30T09:38:14.390Z"
+          },
+          "emb_doc_arr": [
+            {
+              "foo": "some string",
+              "bar": true,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            },
+            {
+              "foo": "another string",
+              "bar": false,
+              "timestamp": {
+                "$date": "2025-05-30T09:38:14.390Z"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "totalOplogSlotDurationMicros": 40581,
+    "ninserted": 1,
+    "keysInserted": 10151,
+    "numYields": 0,
+    "reslen": 230,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 2
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 2
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 1
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "writeConcern": {
+      "w": "majority",
+      "wtimeout": 0,
+      "provenance": "implicitDefault"
+    },
+    "waitForWriteConcernDurationMillis": 52,
+    "storage": {},
+    "cpuNanos": 41833800,
+    "remote": "20.40.131.128:16822",
+    "protocol": "op_msg",
+    "durationMillis": 98
+  },
+  "truncated": {
+    "command": {
+      "documents": {
+        "0": {
+          "emb_doc_arr": {
+            "17": {
+              "foo": {
+                "type": "string",
+                "size": 41
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "size": {
+    "command": 2323145
+  }
+}

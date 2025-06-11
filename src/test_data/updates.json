@@ -1,0 +1,115 @@
+{
+  "t": {
+    "$date": "2025-05-30T09:38:07.727+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn71372",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.$cmd",
+    "command": {
+      "update": "my_coll",
+      "updates": [
+        {
+          "q": {
+            "_id": {
+              "$oid": "669f65fb548091aa955917c8"
+            }
+          },
+          "u": {
+            "$set": {
+              "timestamp": 1748597887000,
+              "foo": "some string",
+              "bar": true
+            }
+          }
+        }
+      ],
+      "ordered": true,
+      "lsid": {
+        "id": {
+          "$uuid": "bc20d6db-b6ce-4a8d-93ef-7742457eb5c5"
+        }
+      },
+      "txnNumber": 4512,
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748597886,
+            "i": 2
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "SnDG9PEnSQt09/TXkwuPq8H7pqQ=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7469113720208097282
+        }
+      },
+      "$db": "my_db"
+    },
+    "numYields": 0,
+    "reslen": 245,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 2
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 2
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 1
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "writeConcern": {
+      "w": "majority",
+      "wtimeout": 0,
+      "provenance": "implicitDefault"
+    },
+    "waitForWriteConcernDurationMillis": 427,
+    "storage": {
+      "data": {
+        "bytesRead": 10059,
+        "timeReadingMicros": 8
+      }
+    },
+    "cpuNanos": 495800,
+    "remote": "20.40.131.128:44154",
+    "protocol": "op_msg",
+    "durationMillis": 428
+  }
+}

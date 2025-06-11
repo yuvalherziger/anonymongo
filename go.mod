@@ -1,4 +1,4 @@
-module mongognito
+module anonymongo
 
 go 1.24.3
 
