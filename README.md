@@ -138,7 +138,7 @@ anonymongo mongod.log -r "some other redaction placeholder"
 ## 3. Tests
 
 Every new refactoring case must be covered by a test to ensure the expected results are yielded and no
-regression is introducesd. The source code contains a single unit test: [./src/redactr_test.go](./src/redactr_test.go).
+regression is introducesd. The source code contains a single unit test: [./src/anonymizer_test.go](./src/anonymizer_test.go).
 It's a parameterized unit test, where each test is a go struct with the following information:
 
 * Test name (e.g., "$expr redaction inside $lookup stage")
