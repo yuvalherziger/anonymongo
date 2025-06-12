@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"time"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -63,13 +66,43 @@ You can provide input either as a file (as the first argument) or by piping logs
 				outWriter = os.Stdout
 			}
 
+			// Progress bar logic
+			var bar *progressbar.ProgressBar
+			if inputFile != "" && outputFile != "" {
+				// Only count lines if both input and output files are provided
+				totalLines, err := countLines(inputFile)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error counting lines: %v\n", err)
+					os.Exit(1)
+				}
+				// bar = progressbar.Default(int64(totalLines))
+				bar = progressbar.NewOptions64(int64(totalLines),
+					progressbar.OptionEnableColorCodes(true),
+					progressbar.OptionSetWidth(50),
+					progressbar.OptionSetDescription("Redacting logs..."),
+					progressbar.OptionSetTheme(progressbar.Theme{
+						Saucer:        "[green]=[reset]",
+						SaucerHead:    "[green]>[reset]",
+						SaucerPadding: " ",
+						BarStart:      "[",
+						BarEnd:        "]",
+					}),
+					progressbar.OptionSetRenderBlankState(true),
+					progressbar.OptionSetPredictTime(false),
+					progressbar.OptionShowCount(),
+					progressbar.OptionOnCompletion(func() { fmt.Fprintln(os.Stderr) }),
+					progressbar.OptionSetWriter(os.Stderr),
+					progressbar.OptionThrottle(200*time.Millisecond), // Refresh at most every 200ms
+				)
+			}
+
 			if useStdin {
-				if err := ProcessMongoLogFileFromReader(os.Stdin, outWriter); err != nil {
+				if err := ProcessMongoLogFileFromReader(os.Stdin, outWriter, nil); err != nil {
 					fmt.Fprintf(os.Stderr, "Error processing stdin: %v\n", err)
 					os.Exit(1)
 				}
 			} else {
-				if err := ProcessMongoLogFile(inputFile, outWriter); err != nil {
+				if err := ProcessMongoLogFile(inputFile, outWriter, bar); err != nil {
 					fmt.Fprintf(os.Stderr, "Error processing log file: %v\n", err)
 					os.Exit(1)
 				}
@@ -97,4 +130,59 @@ You can provide input either as a file (as the first argument) or by piping logs
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// countLines returns the number of lines in a file.
+func countLines(filename string) (int, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	buf := make([]byte, 32*1024)
+	count := 0
+	lineSep := []byte{'\n'}
+
+	for {
+		c, err := f.Read(buf)
+		count += countOccurrences(buf[:c], lineSep)
+		switch {
+		case err == nil:
+		case err == io.EOF:
+			return count, nil
+		default:
+			return count, err
+		}
+	}
+}
+
+func countOccurrences(b, sep []byte) int {
+	count := 0
+	idx := 0
+	for {
+		i := indexOf(b[idx:], sep)
+		if i == -1 {
+			break
+		}
+		count++
+		idx += i + len(sep)
+	}
+	return count
+}
+
+func indexOf(b, sep []byte) int {
+	for i := 0; i+len(sep) <= len(b); i++ {
+		match := true
+		for j := range sep {
+			if b[i+j] != sep[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i
+		}
+	}
+	return -1
 }

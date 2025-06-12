@@ -9,10 +9,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 // processMongoLogStream reads from any io.Reader, redacts each line, and writes to outWriter.
-func processMongoLogStream(r io.Reader, outWriter io.Writer) error {
+// If bar is not nil, it increments the progress bar for each line.
+func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -27,6 +30,9 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer) error {
 			continue
 		}
 		fmt.Fprintln(outWriter, string(out))
+		if bar != nil {
+			bar.Add(1)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return err
@@ -35,7 +41,8 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer) error {
 }
 
 // ProcessMongoLogFile reads a MongoDB log file (plain or gzipped), redacts each entry, and writes the result.
-func ProcessMongoLogFile(filePath string, outWriter io.Writer) error {
+// If bar is not nil, it is updated as lines are processed.
+func ProcessMongoLogFile(filePath string, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -49,12 +56,13 @@ func ProcessMongoLogFile(filePath string, outWriter io.Writer) error {
 			return fmt.Errorf("failed to create gzip reader: %w", err)
 		}
 		defer gzReader.Close()
-		return processMongoLogStream(gzReader, outWriter)
+		return processMongoLogStream(gzReader, outWriter, bar)
 	}
-	return processMongoLogStream(file, outWriter)
+	return processMongoLogStream(file, outWriter, bar)
 }
 
 // ProcessMongoLogFileFromReader reads from any io.Reader (such as stdin), redacts each line, and writes the result.
-func ProcessMongoLogFileFromReader(r io.Reader, outWriter io.Writer) error {
-	return processMongoLogStream(r, outWriter)
+// Progress bar is not used for stdin.
+func ProcessMongoLogFileFromReader(r io.Reader, outWriter io.Writer, bar *progressbar.ProgressBar) error {
+	return processMongoLogStream(r, outWriter, bar)
 }
