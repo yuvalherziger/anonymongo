@@ -8,6 +8,23 @@
 
 Redact sensitive values from MongoDB log files before sharing them, and preserve value types and formats.
 
+---
+
+## Table of Contents
+
+- [anonymongo](#anonymongo)
+  - [Table of Contents](#table-of-contents)
+  - [1. Installation](#1-installation)
+    - [1.1 Homebrew](#11-homebrew)
+    - [1.2 Release download](#12-release-download)
+    - [1.3 Build from source](#13-build-from-source)
+  - [2. Usage](#2-usage)
+  - [3. Tests](#3-tests)
+  - [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos)
+  - [5. Disclaimer](#5-disclaimer)
+
+---
+
 ## 1. Installation
 
 ### 1.1 Homebrew
@@ -18,21 +35,10 @@ Run the following to install anonymongo with Homebrew on your macOS:
 brew install --cask yuvalherziger/anonymongo/anonymongo
 ```
 
-**Please note**: You will probably need to tell your macOS to trust
-this project. When you `anonymongo` for the first time, you'll be warned that the project
-isn't built by a known Apple developer:
+Run `anonymongo version` to verify the installation.
 
-1. Run `anonymongo version` for the first time.
-2. A warning will pop up - click ***Done*** (**do not** click the "Move to trash" button):
-   
-   ![Click "Done" in the security warning dialog](docs/images/click-done.png)
-
-3. Go to ***System Settings*** -> ***Privacy & Security***, and click the ***Open Anyway*** button. You will be prompted again - click
-   ***Open Anyway*** again.
-
-   ![Click "Open Anyway" in the security warning dialog](docs/images/privacy-settings.png)
-
-4. You can now run `anonymongo`.
+**Please note**: If you receive a prompt warning you that the developer of the software
+is not trusted, please follow the instructions in [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
 
 ### 1.2 Release download
 
@@ -173,12 +179,28 @@ Below is an example of such element you can append to the parameterized cases:
 Run the tests the following way:
 
 ```shell
-go test -v ./src/
+make test
 ```
 
-The `-v` (verbose) flag will help you troubleshoot test failures. Every commit pushed upstream will trigger the unit tests.
+## 4. Adding anonymongo to trusted software on macOS
 
-## 4. Disclaimer
+**Please note**: You will probably need to tell your macOS to trust
+this project. When you `anonymongo` for the first time, you'll be warned that the project
+isn't built by a known Apple developer:
+
+1. Run `anonymongo version` for the first time.
+2. A warning will pop up - click ***Done*** (**do not** click the "Move to trash" button):
+   
+   ![Click "Done" in the security warning dialog](docs/images/click-done.png)
+
+3. Go to ***System Settings*** -> ***Privacy & Security***, and click the ***Open Anyway*** button. You will be prompted again - click
+   ***Open Anyway*** again.
+
+   ![Click "Open Anyway" in the security warning dialog](docs/images/privacy-settings.png)
+
+4. You can now run `anonymongo`.
+
+## 5. Disclaimer
 
 This software is not supported by MongoDB, Inc. under any of their commercial support subscriptions or otherwise.
 Any usage of anonymongo is at your own risk. Bug reports, feature requests, and questions can be posted in the
