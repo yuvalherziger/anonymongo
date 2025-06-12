@@ -35,7 +35,11 @@ Run the following to install anonymongo with Homebrew on your macOS:
 brew install --cask yuvalherziger/anonymongo/anonymongo
 ```
 
-Run `anonymongo version` to verify the installation.
+Run to the following to verify the installation:
+
+```shell
+anonymongo version
+```
 
 **Please note**: If you receive a prompt warning you that the developer of the software
 is not trusted, please follow the instructions in [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
@@ -44,8 +48,17 @@ is not trusted, please follow the instructions in [4. Adding anonymongo to trust
 
 Browse to this repository's [release page](https://github.com/yuvalherziger/anonymongo/releases) and
 download the latest stable release for your OS and architecture (e.g., `anonymongo_Windows_x86_64.zip`).
-Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be
-prompted to allow the program explicitly.
+
+Here's the full list of the latest stable (2.0.0) binaries for your convenience:
+
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases#:~:text=anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Linux_x86_64.tar.gz)
+
+Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to allow the program explicitly.
 
 ```shell
 anonymongo version
