@@ -17,16 +17,38 @@ func main() {
 	var outputFile string
 
 	var rootCmd = &cobra.Command{
-		Use:   "anonymongo <JSON file or gzipped MongoDB log file>",
+		Use:   "anonymongo [JSON file or gzipped MongoDB log file]",
 		Short: "Redact MongoDB log files",
-		Long:  `Redact MongoDB log files by replacing sensitive information with generic placeholders`,
-		Args:  cobra.ExactArgs(1),
+		Long: `Redact MongoDB log files by replacing sensitive information with generic placeholders.
+
+You can provide input either as a file (as the first argument) or by piping logs to stdin.`,
+		Args: cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			logFilePath := args[0]
+			var inputFile string
+			var useStdin bool
+
+			// Check if stdin is being piped
+			stat, _ := os.Stdin.Stat()
+			stdinHasData := (stat.Mode() & os.ModeCharDevice) == 0
+
+			if len(args) == 1 && stdinHasData {
+				fmt.Fprintln(os.Stderr, "Error: Cannot provide both a file and piped input. Please provide only one source.")
+				os.Exit(1)
+			}
+
+			if len(args) == 1 {
+				inputFile = args[0]
+			} else if stdinHasData {
+				useStdin = true
+			} else {
+				fmt.Fprintln(os.Stderr, "Error: No input provided. Please specify a file or pipe data to stdin.")
+				os.Exit(1)
+			}
+
 			SetRedactedString(replacement)
 			SetRedactNumbers(redactNumbers)
 			SetRedactIPs(redactIPs)
-			SetRedactBooleans(true)
+			SetRedactBooleans(redactBooleans)
 
 			var outWriter *os.File
 			var err error
@@ -41,9 +63,16 @@ func main() {
 				outWriter = os.Stdout
 			}
 
-			if err := ProcessMongoLogFile(logFilePath, outWriter); err != nil {
-				fmt.Fprintf(os.Stderr, "Error processing log file: %v\n", err)
-				os.Exit(1)
+			if useStdin {
+				if err := ProcessMongoLogFileFromReader(os.Stdin, outWriter); err != nil {
+					fmt.Fprintf(os.Stderr, "Error processing stdin: %v\n", err)
+					os.Exit(1)
+				}
+			} else {
+				if err := ProcessMongoLogFile(inputFile, outWriter); err != nil {
+					fmt.Fprintf(os.Stderr, "Error processing log file: %v\n", err)
+					os.Exit(1)
+				}
 			}
 		},
 	}

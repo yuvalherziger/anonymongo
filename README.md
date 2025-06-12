@@ -61,7 +61,7 @@ To build and run `anonymongo` from source, follow these steps:
     Ensure you have [Go](https://golang.org/dl/) (version 1.18 or higher) installed.
 
     ```shell
-    go build -o anonymongo ./src
+    make build
     ```
 
     This will create an executable named `anonymongo` in the project root.
@@ -71,13 +71,13 @@ To build and run `anonymongo` from source, follow these steps:
     You can now run `anonymongo` directly:
 
     ```shell
-    ./anonymongo --help
+    ./dist/anonymongo --help
     ```
 
     Or process a log file:
 
     ```shell
-    ./anonymongo path/to/mongod.log
+    ./dist/anonymongo path/to/mongod.log
     ```
 
 4. **(Optional) Run tests**
@@ -85,7 +85,7 @@ To build and run `anonymongo` from source, follow these steps:
     To verify your build, run the tests:
 
     ```shell
-    go test -v ./src/
+    make test
     ```
 
 For more build options or troubleshooting, see the [Go documentation](https://golang.org/doc/).
@@ -95,10 +95,12 @@ For more build options or troubleshooting, see the [Go documentation](https://go
 tl;dr: `anonymongo --help`
 
 ```
-Redact MongoDB log files by replacing sensitive information with generic placeholders
+Redact MongoDB log files by replacing sensitive information with generic placeholders.
+
+You can provide input either as a file (as the first argument) or by piping logs to stdin.
 
 Usage:
-  anonymongo <JSON file or gzipped MongoDB log file> [flags]
+  anonymongo [JSON file or gzipped MongoDB log file] [flags]
   anonymongo [command]
 
 Available Commands:
@@ -123,16 +125,25 @@ Examples:
 ```shell
 # Redact logs and gzipped logs straight to standard output:
 anonymongo mongod.log
+
+# Pipe logs with stdin:
+cat mongod.log | grep "Slow query" | anonymongo
+
 # Redact and write the results to a file
-anonymongo mongod.log -o mongod.redacted.log
+anonymongo mongod.log --outputFile mongod.redacted.log
+
 # Redact booleans to constant `false`
-anonymongo mongod.log -b
+anonymongo mongod.log --redactBooleans
+
 # Redact numeric values to constant `0`
-anonymongo mongod.log -n
+anonymongo mongod.log --redactNumbers
+
 # Redact network locations to constant `255.255.255.255:65535`
-anonymongo mongod.log -i
+anonymongo mongod.log --redactIPs
+
 # Change the default redaction replacement string
-anonymongo mongod.log -r "some other redaction placeholder"
+anonymongo mongod.log --replacement "some other redaction placeholder"
+
 ```
 
 ## 3. Tests
