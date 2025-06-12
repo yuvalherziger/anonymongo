@@ -49,7 +49,7 @@ is not trusted, please follow the instructions in [4. Adding anonymongo to trust
 Browse to this repository's [release page](https://github.com/yuvalherziger/anonymongo/releases) and
 download the latest stable release for your OS and architecture (e.g., `anonymongo_Windows_x86_64.zip`).
 
-Here's the full list of the latest stable (2.0.0) binaries for your convenience:
+Here's the full list of the latest stable (0.2.x) binaries for your convenience:
 
 - [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Darwin_arm64.tar.gz)
 - [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Darwin_x86_64.tar.gz)
