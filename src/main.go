@@ -18,6 +18,7 @@ func main() {
 	var redactBooleans bool
 	var redactIPs bool
 	var outputFile string
+	var eagerRedactionPaths []string
 
 	var rootCmd = &cobra.Command{
 		Use:   "anonymongo [JSON file or gzipped MongoDB log file]",
@@ -52,6 +53,9 @@ You can provide input either as a file (as the first argument) or by piping logs
 			SetRedactNumbers(redactNumbers)
 			SetRedactIPs(redactIPs)
 			SetRedactBooleans(redactBooleans)
+			SetEagerRedactionPaths(eagerRedactionPaths) // <-- Add this
+
+			// You can use eagerRedactionPaths here in future logic
 
 			var outWriter *os.File
 			var err error
@@ -125,6 +129,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 	rootCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
 	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact IP addresses to 255.255.255.255")
 	rootCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
+	rootCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, "Specify paths whose field names should be redacted in addition to their values. The structure is either a namespace or a namespace and a nested path, e.g., 'dbName.collName' or 'dbName.collName.fieldName'")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

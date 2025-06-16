@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -21,6 +22,16 @@ func setOptionsRedactedStrings() {
 	SetRedactNumbers(false)
 	SetRedactBooleans(false)
 	SetRedactIPs(false)
+}
+
+func setOptionsRedactedStringsWithEagerRedaction() {
+	SetRedactedString("REDACTED")
+	SetRedactNumbers(false)
+	SetRedactBooleans(false)
+	SetRedactIPs(false)
+	SetEagerRedactionPaths([]string{
+		"my_db.my_coll",
+	})
 }
 
 func setOptionsRedactedAllWithOverride() {
@@ -236,6 +247,44 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				"originatingCommand.pipeline.2.$project.other_docs":   float64(1),
 			},
 		},
+		{
+			Name:      "Simple find with eager redaction",
+			InputFile: "test_data/simple_find.json",
+			Options:   setOptionsRedactedStringsWithEagerRedaction,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.foo": nil,
+				"command.filter.bar": nil,
+				fmt.Sprintf("command.filter.%s", HashFieldName("foo")): "REDACTED",
+				fmt.Sprintf("command.filter.%s", HashFieldName("bar")): "REDACTED",
+			},
+		},
+		{
+			Name:      "Simple aggregation with a match stage and eager redaction",
+			InputFile: "test_data/simple_aggregation.json",
+			Options:   setOptionsRedactedStringsWithEagerRedaction,
+			ExpectedPaths: map[string]interface{}{
+				"command.pipeline.0.$match.status":                                                nil,
+				"command.pipeline.0.$match.createdAt.$lt.$date":                                   nil,
+				fmt.Sprintf("command.pipeline.0.$match.%s", HashFieldName("status")):              "REDACTED",
+				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashFieldName("createdAt")): "REDACTED",
+			},
+		},
+		{
+			Name:      "find with $expr and eager redaction",
+			InputFile: "test_data/find_with_expr.json",
+			Options:   setOptionsRedactedStringsWithEagerRedaction,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.$expr.$and.0.$eq.0":                  HashFieldName("foo"),
+				"command.filter.$expr.$and.0.$eq.1":                  "REDACTED",
+				"command.filter.$expr.$and.1.$eq.0":                  HashFieldName("bar"),
+				"command.filter.$expr.$and.1.$eq.1":                  "REDACTED",
+				"command.sort._id":                                   nil,
+				fmt.Sprintf("command.sort.%s", HashFieldName("_id")): float64(-1),
+				// We should also hash field names in the plan summary indiscriminately:
+				"planSummary": fmt.Sprintf("IXSCAN { %s: 1, %s: 1, %s: -1 }", HashFieldName("foo"), HashFieldName("bar"), HashFieldName("_id")),
+			},
+		},
+		// Add more cases for eager redaction
 	}
 
 	for _, tc := range cases {

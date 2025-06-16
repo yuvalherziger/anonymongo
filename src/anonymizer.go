@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"strings"
 )
 
 // LogEntry is a generic MongoDB log entry with dynamic Attr.
@@ -94,199 +97,279 @@ func (a *SlowQueryAttr) Redact() {
 		a.Remote = "255.255.255.255:65535"
 	}
 
+	shouldEagerRedact := false
+	for _, path := range eagerRedactionPaths {
+		if strings.HasPrefix(path, a.Ns) {
+			shouldEagerRedact = true
+			break
+		}
+	}
+
+	// Use the new redactFieldNames-aware functions
 	if cmd, ok := a.Command["query"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
+		a.Command["query"] = redactQueryValues(cmd, shouldEagerRedact)
 	}
 
 	if cmd, ok := a.OriginatingCommand["query"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
+		a.OriginatingCommand["query"] = redactQueryValues(cmd, shouldEagerRedact)
 	}
 
 	if cmd, ok := a.Command["update"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
+		a.Command["update"] = redactQueryValues(cmd, shouldEagerRedact)
 	}
 
 	if cmd, ok := a.OriginatingCommand["update"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
+		a.OriginatingCommand["update"] = redactQueryValues(cmd, shouldEagerRedact)
 	}
 
 	if updates, ok := a.Command["updates"].([]interface{}); ok {
-		for _, update := range updates {
-			if updateMap, ok := update.(map[string]interface{}); ok {
-				redactQueryValues(updateMap)
-			}
-		}
+		a.Command["updates"] = redactArrayValues(updates, shouldEagerRedact)
 	}
 
 	if updates, ok := a.OriginatingCommand["updates"].([]interface{}); ok {
-		for _, update := range updates {
-			if updateMap, ok := update.(map[string]interface{}); ok {
-				redactQueryValues(updateMap)
-			}
-		}
+		a.OriginatingCommand["updates"] = redactArrayValues(updates, shouldEagerRedact)
 	}
 
 	if cmd, ok := a.Command["filter"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
+		a.Command["filter"] = redactQueryValues(cmd, shouldEagerRedact)
+	}
+
+	if cmd, ok := a.Command["sort"].(map[string]interface{}); ok {
+		a.Command["sort"] = redactQueryValues(cmd, shouldEagerRedact)
+	}
+
+	// We want to ensure the field names aren't leaked if eager redaction is configured:
+	if shouldEagerRedact {
+		a.PlanSummary = redactFieldNamesFromPlanSummary(a.PlanSummary)
 	}
 
 	if cmd, ok := a.OriginatingCommand["filter"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
+		a.OriginatingCommand["filter"] = redactQueryValues(cmd, shouldEagerRedact)
 	}
 
 	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
-		for _, stage := range pipeline {
-			redactPipelineStage(stage)
+		newPipeline := make([]interface{}, len(pipeline))
+		for i, stage := range pipeline {
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact)
 		}
+		a.Command["pipeline"] = newPipeline
 	}
 
 	if pipeline, ok := a.OriginatingCommand["pipeline"].([]interface{}); ok {
-		for _, stage := range pipeline {
-			redactPipelineStage(stage)
+		newPipeline := make([]interface{}, len(pipeline))
+		for i, stage := range pipeline {
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact)
 		}
+		a.OriginatingCommand["pipeline"] = newPipeline
 	}
 
 	// Redact "documents" in insert commands
 	if _, isInsert := a.Command["insert"]; isInsert {
 		if docs, ok := a.Command["documents"].([]interface{}); ok {
-			for _, doc := range docs {
-				if docMap, ok := doc.(map[string]interface{}); ok {
-					redactQueryValues(docMap)
-				}
-			}
+			a.Command["documents"] = redactArrayValues(docs, shouldEagerRedact)
 		}
 	}
 
 	if _, isInsert := a.OriginatingCommand["insert"]; isInsert {
 		if docs, ok := a.OriginatingCommand["documents"].([]interface{}); ok {
-			for _, doc := range docs {
-				if docMap, ok := doc.(map[string]interface{}); ok {
-					redactQueryValues(docMap)
-				}
-			}
+			a.OriginatingCommand["documents"] = redactArrayValues(docs, shouldEagerRedact)
 		}
 	}
+}
+
+// HashFieldName returns a consistent hash for a field name.
+func HashFieldName(field string) string {
+	trimmed := strings.TrimLeft(field, "$")
+	h := sha256.Sum256([]byte(trimmed))
+	hashed := fmt.Sprintf("%s_%x", redactedString, h[:8])
+	redactedFieldMapping[trimmed] = hashed
+	return hashed
+}
+
+func redactFieldNamesFromPlanSummary(planSummary string) string {
+	result := planSummary
+	for fieldName, redacted := range redactedFieldMapping {
+		result = strings.ReplaceAll(result, fieldName, redacted)
+	}
+	return result
 }
 
 // Recursively redact all values in a pipeline stage, not just $match
-func redactPipelineStage(stage interface{}) {
+// If redactFieldNames is true, redact field names as well as values.
+func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
 	switch s := stage.(type) {
 	case map[string]interface{}:
-		// $lookup: only redact the $lookup.pipeline array if present
-		if lookup, ok := s["$lookup"].(map[string]interface{}); ok {
-			if pipeline, ok := lookup["pipeline"].([]interface{}); ok {
-				for _, pstage := range pipeline {
-					redactPipelineStage(pstage)
+		newMap := make(map[string]interface{}, len(s))
+		for k, v := range s {
+			redactedKey := k
+			if redactFieldNames {
+				if _, isOp := KnownOperators[k]; !isOp {
+					redactedKey = HashFieldName(k)
 				}
 			}
-			return
-		}
-		// $project: do not redact top-level numeric values
-		if project, ok := s["$project"].(map[string]interface{}); ok {
-			for k, v := range project {
-				switch vTyped := v.(type) {
-				case map[string]interface{}:
-					redactQueryValues(vTyped)
-				case []interface{}:
-					redactArrayValues(vTyped)
-					project[k] = vTyped
-				default:
-					// Only redact if not a number (float64, int, int64)
-					switch vTyped.(type) {
-					case float64, int, int64:
-						// Do not redact numeric values
-						project[k] = vTyped
-					default:
-						if v != nil {
-							// If it's a string starting with "$", don't redact
-							if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
-								project[k] = v
-							} else {
-								project[k] = redactedValue(v)
+			// $lookup: only redact the $lookup.pipeline array if present
+			if k == "$lookup" {
+				if lookup, ok := v.(map[string]interface{}); ok {
+					if pipeline, ok := lookup["pipeline"].([]interface{}); ok {
+						newPipeline := make([]interface{}, len(pipeline))
+						for i, pstage := range pipeline {
+							newPipeline[i] = redactPipelineStage(pstage, redactFieldNames)
+						}
+						lookup["pipeline"] = newPipeline
+					}
+					newMap[redactedKey] = lookup
+					continue
+				}
+			}
+			// $project: do not redact top-level numeric values
+			if k == "$project" || k == "$addFields" {
+				if project, ok := v.(map[string]interface{}); ok {
+					newProject := make(map[string]interface{}, len(project))
+					for pk, pv := range project {
+						redactedPk := pk
+						if redactFieldNames {
+							redactedPk = HashFieldName(pk)
+						}
+						switch vTyped := pv.(type) {
+						case map[string]interface{}:
+							newProject[redactedPk] = redactQueryValues(vTyped, redactFieldNames)
+						case []interface{}:
+							newProject[redactedPk] = redactArrayValues(vTyped, redactFieldNames)
+						default:
+							switch vTyped.(type) {
+							case float64, int, int64:
+								newProject[redactedPk] = vTyped
+							default:
+								if pv != nil {
+									if str, ok := pv.(string); ok && len(str) > 0 && str[0] == '$' {
+										isOp := false
+										if _, ok := KnownOperators[str]; ok {
+											isOp = true
+										}
+										if redactFieldNames && !isOp {
+											newProject[redactedPk] = HashFieldName(str)
+										} else if isOp {
+											newProject[redactedPk] = pv
+										} else {
+											newProject[redactedPk] = redactedValue(pv)
+										}
+									} else {
+										newProject[redactedPk] = redactedValue(pv)
+									}
+								}
 							}
 						}
 					}
+					newMap[redactedKey] = newProject
+					continue
 				}
 			}
-			return
-		}
-		redactQueryValues(s)
-		for _, v := range s {
-			redactPipelineStage(v)
-		}
-	case []interface{}:
-		for _, item := range s {
-			redactPipelineStage(item)
-		}
-	}
-}
-
-// Recursively redact all leaf values in the query object, except nulls
-func redactQueryValues(obj map[string]interface{}) {
-	for k, v := range obj {
-		switch val := v.(type) {
-		case map[string]interface{}:
-			redactQueryValues(val)
-		case []interface{}:
-			for i, item := range val {
-				switch itemTyped := item.(type) {
-				case map[string]interface{}:
-					redactQueryValues(itemTyped)
-				case []interface{}:
-					redactArrayValues(itemTyped)
-					val[i] = itemTyped
-				default:
-					if item != nil {
-						// If it's a string starting with "$", don't redact
-						if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
-							val[i] = item
+			// General case
+			switch vTyped := v.(type) {
+			case map[string]interface{}:
+				newMap[redactedKey] = redactQueryValues(vTyped, redactFieldNames)
+			case []interface{}:
+				newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames)
+			default:
+				if v != nil {
+					if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
+						if redactFieldNames {
+							if _, isOp := KnownOperators[str]; !isOp {
+								newMap[redactedKey] = HashFieldName(str)
+							}
+						} else if _, isOp := KnownOperators[str]; isOp {
+							newMap[redactedKey] = v
 						} else {
-							val[i] = redactedValue(item)
+							newMap[redactedKey] = redactedValue(v)
 						}
+					} else {
+						newMap[redactedKey] = redactedValue(v)
 					}
 				}
 			}
-			obj[k] = val
+		}
+		return newMap
+	case []interface{}:
+		return redactArrayValues(s, redactFieldNames)
+	default:
+		return stage
+	}
+}
+
+func redactQueryValues(obj map[string]interface{}, redactFieldNames bool) map[string]interface{} {
+	newObj := make(map[string]interface{}, len(obj))
+	for k, v := range obj {
+		redactedKey := k
+		if redactFieldNames {
+			if _, isOp := KnownOperators[k]; !isOp {
+				redactedKey = HashFieldName(k)
+			}
+		}
+		switch val := v.(type) {
+		case map[string]interface{}:
+			newObj[redactedKey] = redactQueryValues(val, redactFieldNames)
+		case []interface{}:
+			newObj[redactedKey] = redactArrayValues(val, redactFieldNames)
 		default:
-			// Only replace if not nil (null in JSON)
 			if v != nil {
-				// If it's a string starting with "$", don't redact
 				if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
-					obj[k] = v
+					isOp := false
+					if _, ok := KnownOperators[str]; ok {
+						isOp = true
+					}
+					if redactFieldNames && !isOp {
+						newObj[redactedKey] = HashFieldName(str)
+					} else if isOp {
+						newObj[redactedKey] = v
+					} else {
+						newObj[redactedKey] = redactedValue(v)
+					}
 				} else {
-					obj[k] = redactedValue(v)
+					newObj[redactedKey] = redactedValue(v)
 				}
 			}
 		}
 	}
+	return newObj
 }
 
 // Helper to recursively redact arrays of values
-func redactArrayValues(arr []interface{}) {
+func redactArrayValues(arr []interface{}, redactFieldNames bool) []interface{} {
 	for i, item := range arr {
 		switch itemTyped := item.(type) {
 		case map[string]interface{}:
-			redactQueryValues(itemTyped)
+			arr[i] = redactQueryValues(itemTyped, redactFieldNames)
 		case []interface{}:
-			redactArrayValues(itemTyped)
-			arr[i] = itemTyped
+			arr[i] = redactArrayValues(itemTyped, redactFieldNames)
 		default:
 			if item != nil {
-				// If it's a string starting with "$", don't redact
 				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
-					arr[i] = item
+					isOp := false
+					if _, ok := KnownOperators[str]; ok {
+						isOp = true
+					}
+					if redactFieldNames && !isOp {
+						arr[i] = HashFieldName(str)
+					} else if isOp {
+						arr[i] = item
+					} else {
+						arr[i] = redactedValue(item)
+					}
 				} else {
 					arr[i] = redactedValue(item)
 				}
 			}
 		}
 	}
+	return arr
 }
 
 var redactedString = "REDACTED"
 var redactNumbers = false
 var redactBooleans = false
 var redactIPs = false
+var eagerRedactionPaths []string
+var redactedFieldMapping = map[string]string{}
 
 func SetRedactedString(s string) {
 	redactedString = s
@@ -302,6 +385,10 @@ func SetRedactBooleans(b bool) {
 
 func SetRedactIPs(b bool) {
 	redactIPs = b
+}
+
+func SetEagerRedactionPaths(paths []string) {
+	eagerRedactionPaths = paths
 }
 
 // Return a generic redacted value based on the type
