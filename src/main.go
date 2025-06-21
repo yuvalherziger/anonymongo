@@ -53,9 +53,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 			SetRedactNumbers(redactNumbers)
 			SetRedactIPs(redactIPs)
 			SetRedactBooleans(redactBooleans)
-			SetEagerRedactionPaths(eagerRedactionPaths) // <-- Add this
-
-			// You can use eagerRedactionPaths here in future logic
+			SetEagerRedactionPaths(eagerRedactionPaths)
 
 			var outWriter *os.File
 			var err error
@@ -127,9 +125,10 @@ You can provide input either as a file (as the first argument) or by piping logs
 	rootCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for redacted values")
 	rootCmd.Flags().BoolVarP(&redactNumbers, "redactNumbers", "n", false, "Redact numeric values to 0")
 	rootCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
-	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact IP addresses to 255.255.255.255")
+	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact network locations to 255.255.255.255:65535")
 	rootCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
-	rootCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, "Specify paths whose field names should be redacted in addition to their values. The structure is either a namespace or a namespace and a nested path, e.g., 'dbName.collName' or 'dbName.collName.fieldName'")
+	rootCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
+addition to their values. The structure is either a namespace; e.g., 'dbName.collName'`)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
