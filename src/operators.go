@@ -15,7 +15,7 @@ var KnownOperators = map[string]interface{}{
 		"boundaries": Redactable,
 		"default":    Redactable,
 		"output":     Redactable,
-		"groupBy":    Redactable,
+		"groupBy":    FieldName,
 	},
 	"$bucketAuto": map[string]interface{}{
 		"granularity": Redactable,
@@ -48,9 +48,13 @@ var KnownOperators = map[string]interface{}{
 		"localOps":        Redactable,
 	},
 	"$densify": map[string]interface{}{
-		"field":             Redactable,
+		"field":             FieldName,
 		"partitionByFields": Redactable,
-		"range":             Redactable,
+		"range": map[string]interface{}{
+			"step":   Exempt,
+			"units":  Exempt,
+			"bounds": Exempt,
+		},
 	},
 	"$documents": Redactable,
 	"$facet":     Pipeline,

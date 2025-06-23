@@ -45,6 +45,38 @@
         },
         {
           "$count": "totalArtists"
+        },
+        {
+          "$densify": {
+            "field": "timestamp",
+            "range": {
+              "step": 1,
+              "unit": "hour",
+              "bounds": [
+                {
+                  "$date": "2021-05-18T00:00:00.000Z"
+                },
+                {
+                  "$date": "2021-05-18T08:00:00.000Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$facet": {
+            "meta": [{
+              "$count": "total"
+            }],
+            "docs": [
+              {
+                "$limit": 10
+              },
+              {
+                "$skip": 0
+              }
+            ]
+          }
         }
       ],
       "cursor": {},

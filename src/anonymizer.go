@@ -1,9 +1,7 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
@@ -150,7 +148,7 @@ func (a *SlowQueryAttr) Redact() {
 	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
 		newPipeline := make([]interface{}, len(pipeline))
 		for i, stage := range pipeline {
-			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact)
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, false)
 		}
 		a.Command["pipeline"] = newPipeline
 	}
@@ -158,7 +156,7 @@ func (a *SlowQueryAttr) Redact() {
 	if pipeline, ok := a.OriginatingCommand["pipeline"].([]interface{}); ok {
 		newPipeline := make([]interface{}, len(pipeline))
 		for i, stage := range pipeline {
-			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact)
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, false)
 		}
 		a.OriginatingCommand["pipeline"] = newPipeline
 	}
@@ -177,34 +175,23 @@ func (a *SlowQueryAttr) Redact() {
 	}
 }
 
-// HashFieldName returns a consistent hash for a field name.
-func HashFieldName(field string) string {
-	trimmed := strings.TrimLeft(field, "$")
-	parts := strings.Split(trimmed, ".")
-	hashedParts := make([]string, len(parts))
-	for i, part := range parts {
-		h := sha256.Sum256([]byte(part))
-		hashed := fmt.Sprintf("%s_%x", redactedString, h[:8])
-		redactedFieldMapping[part] = hashed
-		hashedParts[i] = hashed
-	}
-	return strings.Join(hashedParts, ".")
-}
-
 func redactFieldNamesFromPlanSummary(planSummary string) string {
 	if planSummary == "COLLSCAN" {
 		return planSummary
 	}
 	result := planSummary
-	for fieldName, redacted := range redactedFieldMapping {
-		result = strings.ReplaceAll(result, fieldName, redacted)
+	fieldNames := ParsePlanSummary(planSummary)
+	for _, fieldName := range fieldNames {
+		hashed := HashFieldName(fieldName)
+		result = strings.ReplaceAll(result, fieldName, hashed)
 	}
 	return result
 }
 
 // Recursively redact all values in a pipeline stage, not just $match
 // If redactFieldNames is true, redact field names as well as values.
-func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
+// atRoot indicates if we're at the root of KnownOperators
+func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) interface{} {
 	switch s := stage.(type) {
 	case map[string]interface{}:
 		newMap := make(map[string]interface{}, len(s))
@@ -215,15 +202,32 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
 				redactedKey = HashFieldName(k)
 			}
 
-			// PATCH: skip redaction for $-prefixed strings if not eager (applies to all values)
-			if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' && !redactFieldNames {
-				newMap[redactedKey] = v
-				continue
-			}
-
 			switch meta := opMeta.(type) {
 			case OperatorType:
 				switch meta {
+				case FieldName:
+					if redactFieldNames {
+						switch vTyped := v.(type) {
+						case string:
+							// Only hash if not at root
+							if atRoot {
+								newMap[redactedKey] = vTyped
+							} else if _, isOp := KnownOperators[vTyped]; isOp {
+								newMap[redactedKey] = vTyped
+							} else {
+								newMap[redactedKey] = HashFieldName(vTyped)
+							}
+						case map[string]interface{}:
+							newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, false)
+						case []interface{}:
+							newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames)
+						default:
+							newMap[redactedKey] = redactScalarValue(v)
+						}
+					} else {
+						newMap[redactedKey] = v
+					}
+					continue
 				case Exempt:
 					newMap[redactedKey] = v
 					continue
@@ -234,45 +238,37 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
 						newMap[redactedKey] = v
 					}
 					continue
-				case FieldName:
-					// Only redact if redactFieldNames is true
-					if redactFieldNames {
-						switch vTyped := v.(type) {
-						case map[string]interface{}:
-							newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames)
-						case []interface{}:
-							newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames)
-						default:
-							newMap[redactedKey] = redactedValue(v)
-						}
-					} else {
-						newMap[redactedKey] = v
-					}
-					continue
-				case Redactable:
-					// PATCH: skip redaction for $-prefixed strings if not eager
-					if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' && !redactFieldNames {
-						newMap[redactedKey] = v
-						continue
-					}
-					// Redact as usual below
 				}
 			case map[string]interface{}:
 				if subMap, ok := v.(map[string]interface{}); ok {
 					newSubMap := make(map[string]interface{}, len(subMap))
 					for subK, subV := range subMap {
-						// FIXED: This should be the definitive check for $-prefixed strings when not eager
-						// It should not be overridden by operator metadata processing
-						if str, ok := subV.(string); ok && len(str) > 0 && str[0] == '$' && !redactFieldNames {
-							newSubMap[subK] = subV
-							continue
-						}
-
 						subMeta, subFound := meta[subK]
 						if subFound {
 							switch subMetaTyped := subMeta.(type) {
 							case OperatorType:
 								switch subMetaTyped {
+								case FieldName:
+									if redactFieldNames {
+										switch subVTyped := subV.(type) {
+										case string:
+											// Only hash if not at root
+											if _, isOp := KnownOperators[subVTyped]; isOp {
+												newSubMap[subK] = subVTyped
+											} else {
+												newSubMap[subK] = HashFieldName(subVTyped)
+											}
+										case map[string]interface{}:
+											newSubMap[subK] = redactPipelineStage(subVTyped, redactFieldNames, false)
+										case []interface{}:
+											newSubMap[subK] = redactArrayValues(subVTyped, redactFieldNames)
+										default:
+											newSubMap[subK] = redactScalarValue(subV)
+										}
+									} else {
+										newSubMap[subK] = subV
+									}
+									continue
 								case Exempt:
 									newSubMap[subK] = subV
 									continue
@@ -283,24 +279,6 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
 										newSubMap[subK] = subV
 									}
 									continue
-								case FieldName:
-									// Only redact if redactFieldNames is true
-									if redactFieldNames {
-										switch subVTyped := subV.(type) {
-										case map[string]interface{}:
-											newSubMap[subK] = redactPipelineStage(subVTyped, redactFieldNames)
-										case []interface{}:
-											newSubMap[subK] = redactArrayValues(subVTyped, redactFieldNames)
-										default:
-											newSubMap[subK] = redactedValue(subV)
-										}
-									} else {
-										newSubMap[subK] = subV
-									}
-									continue
-								case Redactable:
-									// Remove the redundant check here since it's handled above
-									// Redact as usual below
 								}
 							default:
 								// Redact as usual below
@@ -312,12 +290,12 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
 						}
 						switch subVTyped := subV.(type) {
 						case map[string]interface{}:
-							newSubMap[redactedSubK] = redactPipelineStage(subVTyped, redactFieldNames)
+							newSubMap[redactedSubK] = redactPipelineStage(subVTyped, redactFieldNames, atRoot)
 						case []interface{}:
 							newSubMap[redactedSubK] = redactArrayValues(subVTyped, redactFieldNames)
 						default:
 							// Remove the redundant check here since it's handled above
-							newSubMap[redactedSubK] = redactedValue(subV)
+							newSubMap[redactedSubK] = redactScalarValue(subV)
 						}
 					}
 					newMap[redactedKey] = newSubMap
@@ -333,11 +311,11 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool) interface{} {
 
 			switch vTyped := v.(type) {
 			case map[string]interface{}:
-				newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames)
+				newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, atRoot)
 			case []interface{}:
 				newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames)
 			default:
-				newMap[redactedKey] = redactedValue(v)
+				newMap[redactedKey] = redactScalarValue(v)
 			}
 		}
 		return newMap
@@ -362,7 +340,7 @@ func redactQueryValues(obj map[string]interface{}, redactFieldNames bool) map[st
 		case map[string]interface{}:
 			newObj[redactedKey] = redactQueryValues(val, redactFieldNames)
 		case []interface{}:
-			newObj[redactedKey] = redactArrayValues(val, redactFieldNames)
+			newObj[redactedKey] = redactArrayValuesWithKey(k, val, redactFieldNames)
 		default:
 			// In redactQueryValues, for string values:
 			if v != nil {
@@ -374,11 +352,10 @@ func redactQueryValues(obj map[string]interface{}, redactFieldNames bool) map[st
 					if redactFieldNames && !isOp {
 						newObj[redactedKey] = HashFieldName(str)
 					} else {
-						// Correction: do NOT redact if not eagerly redacting, regardless of operator
 						newObj[redactedKey] = v
 					}
 				} else {
-					newObj[redactedKey] = redactedValue(v)
+					newObj[redactedKey] = redactScalarValueWithKey(k, v)
 				}
 			}
 		}
@@ -386,16 +363,15 @@ func redactQueryValues(obj map[string]interface{}, redactFieldNames bool) map[st
 	return newObj
 }
 
-// Helper to recursively redact arrays of values
-func redactArrayValues(arr []interface{}, redactFieldNames bool) []interface{} {
+// Helper to recursively redact arrays of values, passing the parent key
+func redactArrayValuesWithKey(parentKey string, arr []interface{}, redactFieldNames bool) []interface{} {
 	for i, item := range arr {
 		switch itemTyped := item.(type) {
 		case map[string]interface{}:
 			arr[i] = redactQueryValues(itemTyped, redactFieldNames)
 		case []interface{}:
-			arr[i] = redactArrayValues(itemTyped, redactFieldNames)
+			arr[i] = redactArrayValuesWithKey(parentKey, itemTyped, redactFieldNames)
 		default:
-			// In redactArrayValues, for string values:
 			if item != nil {
 				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
 					isOp := false
@@ -405,11 +381,10 @@ func redactArrayValues(arr []interface{}, redactFieldNames bool) []interface{} {
 					if redactFieldNames && !isOp {
 						arr[i] = HashFieldName(str)
 					} else {
-						// Correction: do NOT redact if not eagerly redacting, regardless of operator
 						arr[i] = item
 					}
 				} else {
-					arr[i] = redactedValue(item)
+					arr[i] = redactScalarValueWithKey(parentKey, item)
 				}
 			}
 		}
@@ -417,12 +392,17 @@ func redactArrayValues(arr []interface{}, redactFieldNames bool) []interface{} {
 	return arr
 }
 
+// Update redactArrayValues to call redactArrayValuesWithKey with empty key for top-level
+func redactArrayValues(arr []interface{}, redactFieldNames bool) []interface{} {
+	return redactArrayValuesWithKey("", arr, redactFieldNames)
+}
+
 var redactedString = "REDACTED"
 var redactNumbers = false
 var redactBooleans = false
 var redactIPs = false
 var eagerRedactionPaths []string
-var redactedFieldMapping = map[string]string{}
+var RedactedFieldMapping = map[string]string{}
 
 func SetRedactedString(s string) {
 	redactedString = s
@@ -444,8 +424,14 @@ func SetEagerRedactionPaths(paths []string) {
 	eagerRedactionPaths = paths
 }
 
-// Return a generic redacted value based on the type
-func redactedValue(v interface{}) interface{} {
+// Return a generic redacted value based on the type, optionally aware of the key
+func redactScalarValueWithKey(key string, v interface{}) interface{} {
+	switch key {
+	case "$date":
+		return "1970-01-01T00:00:00.000Z"
+	case "$oid":
+		return "000000000000000000000000"
+	}
 	switch val := v.(type) {
 	case string:
 		// Check if it's a 24-character hex string (MongoDB ObjectID)
@@ -486,6 +472,11 @@ func redactedValue(v interface{}) interface{} {
 	default:
 		return redactedString
 	}
+}
+
+// Optionally, keep the original redactScalarValue for legacy use
+func redactScalarValue(v interface{}) interface{} {
+	return redactScalarValueWithKey("", v)
 }
 
 func (l *LogEntry) UnmarshalJSON(data []byte) error {

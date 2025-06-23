@@ -15,7 +15,7 @@ type RedactTestCase struct {
 	Name          string
 	InputFile     string
 	Options       func()
-	ExpectedPaths map[string]interface{} // JSON path -> expected value
+	ExpectedPaths map[string]interface{}
 }
 
 // Example option sets
@@ -266,7 +266,7 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     "REDACTED",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               "REDACTED",
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               "1970-01-01T00:00:00.000Z",
 				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
 				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         "REDACTED",
 				"command.pipeline.2.$project.numericStatus.$cond.then":             float64(0),
@@ -299,11 +299,11 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			ExpectedPaths: map[string]interface{}{
 				"command.documents.0.foo":                           "REDACTED",
 				"command.documents.0.bar":                           false,
-				"command.documents.0.timestamp.$date":               "REDACTED",
+				"command.documents.0.timestamp.$date":               "1970-01-01T00:00:00.000Z",
 				"command.documents.0.val_arr.0":                     "REDACTED",
 				"command.documents.0.emb_doc_arr.0.foo":             "REDACTED",
 				"command.documents.0.emb_doc_arr.0.bar":             false,
-				"command.documents.0.emb_doc_arr.0.timestamp.$date": "REDACTED",
+				"command.documents.0.emb_doc_arr.0.timestamp.$date": "1970-01-01T00:00:00.000Z",
 			},
 		},
 		{
@@ -327,9 +327,9 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			ExpectedPaths: map[string]interface{}{
 				"command.query.$and.0.name":                 "<VALUE REDACTED>",
 				"command.query.$and.0.active.$ne":           false,
-				"command.query.$and.1.$or.0.cAt.$lte.$date": "<VALUE REDACTED>",
-				"command.query.$and.1.$or.1.uAt.$lte.$date": "<VALUE REDACTED>",
-				"command.update.$set.uAt.$date":             "<VALUE REDACTED>",
+				"command.query.$and.1.$or.0.cAt.$lte.$date": "1970-01-01T00:00:00.000Z",
+				"command.query.$and.1.$or.1.uAt.$lte.$date": "1970-01-01T00:00:00.000Z",
+				"command.update.$set.uAt.$date":             "1970-01-01T00:00:00.000Z",
 			},
 		},
 		{
@@ -422,7 +422,7 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$match.$expr.$and.0.$ne.0":                                                       HashFieldName("status"),
 				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                                                       "REDACTED",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                                 "REDACTED",
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                                 "1970-01-01T00:00:00.000Z",
 				"command.pipeline.0.$match.$expr.$and.1.$lt.0":                                                       HashFieldName("createdAt"),
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.0.$match.%s.$oid", HashFieldName("organizationId")): "000000000000000000000000",
 				// We have to hash field names in the pipeline stages too now:
@@ -439,12 +439,18 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			InputFile: "aggregation_stages_edge_cases.json",
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
-				// $bucket
-				"command.pipeline.0.$bucket.boundaries":        []float64{float64(1840), float64(1850), float64(1860), float64(1870), float64(1880)},
-				"command.pipeline.0.$bucket.groupBy":           "$year_born",
-				"command.pipeline.0.$bucket.default":           "REDACTED",
-				"command.pipeline.0.$bucket.output.count.$sum": float64(1),
-				"command.pipeline.1.$count":                    "totalArtists",
+				"command.pipeline.0.$bucket.boundaries":            []float64{float64(1840), float64(1850), float64(1860), float64(1870), float64(1880)},
+				"command.pipeline.0.$bucket.groupBy":               "$year_born",
+				"command.pipeline.0.$bucket.default":               "REDACTED",
+				"command.pipeline.0.$bucket.output.count.$sum":     float64(1),
+				"command.pipeline.1.$count":                        "totalArtists",
+				"command.pipeline.2.$densify.field":                "timestamp",
+				"command.pipeline.2.$densify.range.step":           float64(1),
+				"command.pipeline.2.$densify.range.bounds.0.$date": "1970-01-01T00:00:00.000Z",
+				"command.pipeline.2.$densify.range.bounds.1.$date": "1970-01-01T00:00:00.000Z",
+				"command.pipeline.3.$facet.meta.0.$count":          "total",
+				"command.pipeline.3.$facet.docs.0.$limit":          float64(10),
+				"command.pipeline.3.$facet.docs.1.$skip":           float64(0),
 			},
 		},
 		{
@@ -452,8 +458,9 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			InputFile: "aggregation_stages_edge_cases.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$bucket.groupBy": "REDACTED",
-				"command.pipeline.1.$count":          "REDACTED",
+				"command.pipeline.0.$bucket.groupBy": HashFieldName("$year_born"),
+				"command.pipeline.1.$count":          HashFieldName("totalArtists"),
+				"command.pipeline.2.$densify.field":  HashFieldName("timestamp"),
 			},
 		},
 	}
