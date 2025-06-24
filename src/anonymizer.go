@@ -148,7 +148,8 @@ func (a *SlowQueryAttr) Redact() {
 	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
 		newPipeline := make([]interface{}, len(pipeline))
 		for i, stage := range pipeline {
-			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, false)
+			inSearchStage := isSearchStage(stage)
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, false, inSearchStage)
 		}
 		a.Command["pipeline"] = newPipeline
 	}
@@ -156,7 +157,8 @@ func (a *SlowQueryAttr) Redact() {
 	if pipeline, ok := a.OriginatingCommand["pipeline"].([]interface{}); ok {
 		newPipeline := make([]interface{}, len(pipeline))
 		for i, stage := range pipeline {
-			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, false)
+			inSearchStage := isSearchStage(stage)
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, false, inSearchStage)
 		}
 		a.OriginatingCommand["pipeline"] = newPipeline
 	}
@@ -188,20 +190,44 @@ func redactFieldNamesFromPlanSummary(planSummary string) string {
 	return result
 }
 
-// Recursively redact all values in a pipeline stage, not just $match
-// If redactFieldNames is true, redact field names as well as values.
-// atRoot indicates if we're at the root of KnownOperators
-func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) interface{} {
+func getOperatorType(parts []string, operatorMap map[string]interface{}) any {
+
+	var current any = operatorMap
+	for _, part := range parts {
+		m, ok := current.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		val, exists := m[part]
+		if !exists {
+			return nil
+		}
+		current = val
+	}
+	if opType, isOpType := current.(OperatorType); isOpType {
+		return opType
+	}
+	return nil
+}
+
+// TODO: Problem: we have to be aware of where we are in the hierarcy at all times, but also check top-level operators
+func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool, inSearchStage bool) interface{} {
+	var operatorMap map[string]interface{}
+	if inSearchStage {
+		operatorMap = SearchAggregationOperators
+	} else {
+		operatorMap = CoreOperators
+	}
+
 	switch s := stage.(type) {
 	case map[string]interface{}:
 		newMap := make(map[string]interface{}, len(s))
 		for k, v := range s {
 			redactedKey := k
-			opMeta, isOp := KnownOperators[k]
+			opMeta, isOp := operatorMap[k]
 			if redactFieldNames && (!isOp || (isOp && opMeta == nil)) {
 				redactedKey = HashFieldName(k)
 			}
-
 			switch meta := opMeta.(type) {
 			case OperatorType:
 				switch meta {
@@ -212,13 +238,13 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) 
 							// Only hash if not at root
 							if atRoot {
 								newMap[redactedKey] = vTyped
-							} else if _, isOp := KnownOperators[vTyped]; isOp {
+							} else if _, isOp := operatorMap[vTyped]; isOp {
 								newMap[redactedKey] = vTyped
 							} else {
 								newMap[redactedKey] = HashFieldName(vTyped)
 							}
 						case map[string]interface{}:
-							newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, false)
+							newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, false, inSearchStage)
 						case []interface{}:
 							newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames)
 						default:
@@ -238,6 +264,18 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) 
 						newMap[redactedKey] = v
 					}
 					continue
+				case OperatorArray:
+					if arr, ok := v.([]interface{}); ok {
+						redactedArr := make([]interface{}, len(arr))
+						for i, elem := range arr {
+							// Use atRoot=true so operator map is correct for search operator arrays
+							redactedArr[i] = redactPipelineStage(elem, redactFieldNames, true, inSearchStage)
+						}
+						newMap[redactedKey] = redactedArr
+					} else {
+						newMap[redactedKey] = v
+					}
+					continue
 				}
 			case map[string]interface{}:
 				if subMap, ok := v.(map[string]interface{}); ok {
@@ -253,13 +291,13 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) 
 										switch subVTyped := subV.(type) {
 										case string:
 											// Only hash if not at root
-											if _, isOp := KnownOperators[subVTyped]; isOp {
+											if _, isOp := operatorMap[subVTyped]; isOp {
 												newSubMap[subK] = subVTyped
 											} else {
 												newSubMap[subK] = HashFieldName(subVTyped)
 											}
 										case map[string]interface{}:
-											newSubMap[subK] = redactPipelineStage(subVTyped, redactFieldNames, false)
+											newSubMap[subK] = redactPipelineStage(subVTyped, redactFieldNames, false, inSearchStage)
 										case []interface{}:
 											newSubMap[subK] = redactArrayValues(subVTyped, redactFieldNames)
 										default:
@@ -271,6 +309,18 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) 
 									continue
 								case Exempt:
 									newSubMap[subK] = subV
+									continue
+								case OperatorArray:
+									if arr, ok := subV.([]interface{}); ok {
+										redactedArr := make([]interface{}, len(arr))
+										for i, elem := range arr {
+											// Use atRoot=true so operator map is correct for search operator arrays
+											redactedArr[i] = redactPipelineStage(elem, redactFieldNames, true, inSearchStage)
+										}
+										newSubMap[subK] = redactedArr
+									} else {
+										newSubMap[subK] = subV
+									}
 									continue
 								case Pipeline:
 									if arr, ok := subV.([]interface{}); ok {
@@ -290,7 +340,7 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) 
 						}
 						switch subVTyped := subV.(type) {
 						case map[string]interface{}:
-							newSubMap[redactedSubK] = redactPipelineStage(subVTyped, redactFieldNames, atRoot)
+							newSubMap[redactedSubK] = redactPipelineStage(subVTyped, redactFieldNames, atRoot, inSearchStage)
 						case []interface{}:
 							newSubMap[redactedSubK] = redactArrayValues(subVTyped, redactFieldNames)
 						default:
@@ -311,7 +361,7 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, atRoot bool) 
 
 			switch vTyped := v.(type) {
 			case map[string]interface{}:
-				newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, atRoot)
+				newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, atRoot, inSearchStage)
 			case []interface{}:
 				newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames)
 			default:
@@ -332,7 +382,7 @@ func redactQueryValues(obj map[string]interface{}, redactFieldNames bool) map[st
 		redactedKey := k
 		// In redactQueryValues, for keys:
 		if redactFieldNames {
-			if _, isOp := KnownOperators[k]; !isOp {
+			if _, isOp := CoreOperators[k]; !isOp {
 				redactedKey = HashFieldName(k)
 			}
 		}
@@ -346,7 +396,7 @@ func redactQueryValues(obj map[string]interface{}, redactFieldNames bool) map[st
 			if v != nil {
 				if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
 					isOp := false
-					if _, ok := KnownOperators[str]; ok {
+					if _, ok := CoreOperators[str]; ok {
 						isOp = true
 					}
 					if redactFieldNames && !isOp {
@@ -375,7 +425,7 @@ func redactArrayValuesWithKey(parentKey string, arr []interface{}, redactFieldNa
 			if item != nil {
 				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
 					isOp := false
-					if _, ok := KnownOperators[str]; ok {
+					if _, ok := CoreOperators[str]; ok {
 						isOp = true
 					}
 					if redactFieldNames && !isOp {
@@ -536,4 +586,16 @@ func RedactMongoLog(jsonStr string) (*LogEntry, error) {
 		entry.Attr.Redact()
 	}
 	return &entry, nil
+}
+
+// Helper to check if a pipeline stage is a $search, $searchMeta, or $vectorSearch stage
+func isSearchStage(stage interface{}) bool {
+	if m, ok := stage.(map[string]interface{}); ok {
+		for k := range m {
+			if k == "$search" || k == "$searchMeta" || k == "$vectorSearch" {
+				return true
+			}
+		}
+	}
+	return false
 }

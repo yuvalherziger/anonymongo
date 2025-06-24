@@ -463,6 +463,27 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				"command.pipeline.2.$densify.field":  HashFieldName("timestamp"),
 			},
 		},
+		{
+			Name:      "Simple search",
+			InputFile: "simple_search.json",
+			Options:   setOptionsRedactedStrings,
+			ExpectedPaths: map[string]interface{}{
+				"command.pipeline.0.$search.index":      "default",
+				"command.pipeline.0.$search.text.query": "REDACTED",
+				"command.pipeline.0.$search.text.path":  "title",
+			},
+		},
+		{
+			Name:      "Search with compound operators",
+			InputFile: "search_with_compound_operators.json",
+			Options:   setOptionsRedactedStrings,
+			ExpectedPaths: map[string]interface{}{
+				"command.pipeline.0.$search.compound.should.0.text.path":                  "type",
+				"command.pipeline.0.$search.compound.should.0.text.query":                 "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":  "category",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query": "REDACTED",
+			},
+		},
 	}
 
 	for _, tc := range cases {

@@ -3,13 +3,14 @@ package main
 type OperatorType int
 
 const (
-	Pipeline   OperatorType = iota // A nested pipeline
-	Exempt     OperatorType = iota // No need to redact exempted keys
-	Redactable OperatorType = iota // Redact based on existing rules
-	FieldName  OperatorType = iota // Redact if eager redaction is used
+	Pipeline      OperatorType = iota // A nested pipeline
+	Exempt        OperatorType = iota // No need to redact exempted keys
+	Redactable    OperatorType = iota // Redact based on existing rules
+	FieldName     OperatorType = iota // Redact if eager redaction is used
+	OperatorArray OperatorType = iota
 )
 
-var KnownOperators = map[string]interface{}{
+var CoreOperators = map[string]interface{}{
 	"$addFields": Redactable,
 	"$bucket": map[string]interface{}{
 		"boundaries": Redactable,
@@ -59,13 +60,13 @@ var KnownOperators = map[string]interface{}{
 	"$documents": Redactable,
 	"$facet":     Pipeline,
 	"$fill": map[string]interface{}{
-		"partitionByFields": Redactable,
+		"partitionByFields": FieldName,
 		"partitionBy":       Redactable,
-		"sortBy":            Redactable,
+		"sortBy":            FieldName,
 		"output":            Redactable,
 	},
 	"$geoNear": map[string]interface{}{
-		"distanceField":      Redactable,
+		"distanceField":      FieldName,
 		"distanceMultiplier": Redactable,
 		"includeLocs":        Redactable,
 		"key":                Redactable,
@@ -78,14 +79,13 @@ var KnownOperators = map[string]interface{}{
 	"$graphLookup": map[string]interface{}{
 		"from":                    Exempt,
 		"startWith":               Redactable,
-		"connectFromField":        Redactable,
-		"connectToField":          Redactable,
+		"connectFromField":        FieldName,
+		"connectToField":          FieldName,
 		"as":                      Redactable,
 		"maxDepth":                Redactable,
-		"depthField":              Redactable,
+		"depthField":              FieldName,
 		"restrictSearchWithMatch": Redactable,
 	},
-	// TODO: Stopped here:
 	"$group":      Redactable,
 	"$indexStats": Redactable,
 	"$limit":      Exempt,
@@ -128,30 +128,26 @@ var KnownOperators = map[string]interface{}{
 	"$querySettings":  Exempt,
 	"$queryStats":     Exempt,
 	"$redact":         Redactable,
-	"$replaceRoot":    map[string]interface{}{"newRoot": nil},
+	"$replaceRoot":    map[string]interface{}{"newRoot": FieldName},
 	"$replaceWith":    Redactable,
 	"$sample":         Exempt,
-	"$search":         Redactable, // TODO
-	"$searchMeta":     Redactable, // TODO
 	"$set":            Redactable,
 	"$setWindowFields": map[string]interface{}{
 		"partitionBy": Redactable,
-		"sortBy":      Redactable,
+		"sortBy":      FieldName,
 		"output":      Redactable,
 		"window":      Redactable,
 	},
 	"$shardedDataDistribution": Exempt,
 	"$skip":                    Exempt,
 	"$sort":                    Redactable,
-	"$sortByCount":             Redactable,
+	"$sortByCount":             FieldName,
 	"$unionWith": map[string]interface{}{
-		"coll":     Redactable,
+		"coll":     Exempt,
 		"pipeline": Pipeline,
 	},
-	"$unset": Redactable,
-	// Handle cases where the $unoperator is not a string
-	"$unwind":        Redactable,
-	"$vectorSearch":  Redactable, // TODO
+	"$unset":         FieldName,
+	"$unwind":        FieldName,
 	"$eq":            Redactable,
 	"$gt":            Redactable,
 	"$gte":           Redactable,
@@ -237,8 +233,191 @@ var KnownOperators = map[string]interface{}{
 	"$cmp":           Redactable,
 	"$oid":           Redactable,
 	"$date":          Redactable,
-	"$cond":          Redactable,
-	"if":             Redactable,
-	"then":           Redactable,
-	"else":           Redactable,
+	"$cond": map[string]interface{}{
+		"if":   Redactable,
+		"then": Redactable,
+		"else": Redactable,
+	},
+	"if":   Redactable,
+	"then": Redactable,
+	"else": Redactable,
 }
+
+var geoJSON = map[string]interface{}{
+	"type":        Exempt,
+	"coordinates": Redactable,
+}
+
+func mergeMaps(dst, src map[string]interface{}) {
+	for k, v := range src {
+		dst[k] = v
+	}
+}
+
+var SearchOperators = map[string]interface{}{
+	"autocomplete": map[string]interface{}{
+		"query":      Redactable,
+		"path":       FieldName,
+		"tokenOrder": Exempt,
+		"fuzzy":      Exempt,
+		"score":      Exempt,
+	},
+	"compound": map[string]interface{}{
+		"must":    OperatorArray,
+		"mustNot": OperatorArray,
+		"should":  OperatorArray,
+		"filter":  Redactable,
+		"score":   Exempt,
+	},
+	"embeddedDocument": map[string]interface{}{
+		"path":     FieldName,
+		"operator": Redactable,
+		"score":    Exempt,
+	},
+	"equals": map[string]interface{}{
+		"path":  FieldName,
+		"value": Redactable,
+		"score": Exempt,
+	},
+	"exists": map[string]interface{}{
+		"path":  FieldName,
+		"score": Exempt,
+	},
+	"facet": map[string]interface{}{
+		"operator": Redactable,
+		"facets":   map[string]interface{}{},
+	},
+	"geoShape": map[string]interface{}{
+		"path":     FieldName,
+		"relation": Exempt,
+		"geometry": geoJSON,
+		"score":    Exempt,
+	},
+	"geoWithin": map[string]interface{}{
+		"path": FieldName,
+		"box": map[string]interface{}{
+			"bottomLeft": geoJSON,
+			"topRight":   geoJSON,
+		},
+		"circle": map[string]interface{}{
+			"center": geoJSON,
+			"radius": Redactable,
+		},
+		"geometry": geoJSON,
+		"score":    Exempt,
+	},
+	"in": map[string]interface{}{
+		"path":  FieldName,
+		"score": Exempt,
+		"value": Redactable,
+	},
+	"moreLikeThis": map[string]interface{}{
+		"like":  Redactable,
+		"score": Exempt,
+	},
+	"near": map[string]interface{}{
+		"path":   FieldName,
+		"origin": Redactable,
+		"pivot":  Redactable,
+		"score":  Exempt,
+	},
+	"phrase": map[string]interface{}{
+		"query":    Redactable,
+		"path":     FieldName,
+		"score":    Exempt,
+		"slop":     Exempt,
+		"synonyms": Redactable,
+	},
+	"queryString": map[string]interface{}{
+		"defaultPath": FieldName,
+		"query":       Redactable,
+	},
+	"range": map[string]interface{}{
+		"path":  FieldName,
+		"gte":   Redactable,
+		"gt":    Redactable,
+		"lte":   Redactable,
+		"lt":    Redactable,
+		"score": Exempt,
+	},
+	"regex": map[string]interface{}{
+		"query":              Redactable,
+		"path":               FieldName,
+		"allowAnalyzedField": Exempt,
+		"score":              Exempt,
+	},
+	"span": map[string]interface{}{
+		"term": map[string]interface{}{
+			"path":  FieldName,
+			"query": Redactable,
+		},
+		"contains": map[string]interface{}{
+			"spanToReturn": Exempt,
+			"little":       Redactable,
+			"big":          Redactable,
+			"score":        Exempt,
+		},
+		"first": map[string]interface{}{
+			"endPositionLte": Redactable,
+			"operator":       Redactable,
+			"score":          Exempt,
+		},
+		"near": map[string]interface{}{
+			"clauses": Redactable,
+			"slop":    Redactable,
+			"inOrder": Exempt,
+			"score":   Exempt,
+		},
+		"or": map[string]interface{}{
+			"clauses": Redactable,
+			"score":   Exempt,
+		},
+		"subtract": map[string]interface{}{
+			"include": Redactable,
+			"exclude": Redactable,
+			"score":   Exempt,
+		},
+	},
+	"text": map[string]interface{}{
+		"query":         Redactable,
+		"path":          FieldName,
+		"fuzzy":         Exempt,
+		"matchCriteria": Exempt,
+		"score":         Exempt,
+		"synonyms":      Redactable,
+	},
+	"wildcard": map[string]interface{}{
+		"query":              Redactable,
+		"path":               FieldName,
+		"allowAnalyzedField": Exempt,
+		"score":              Exempt,
+	},
+	"type":       Exempt,
+	"path":       FieldName,
+	"numBuckets": Exempt,
+}
+
+var SearchAggregationOperators = func() map[string]interface{} {
+	agg := map[string]interface{}{}
+	mergeMaps(agg, SearchOperators)
+	agg["$search"] = map[string]interface{}{
+		"index": Exempt,
+		"highlight": map[string]interface{}{
+			"path":              FieldName,
+			"maxCharsToExamine": Exempt,
+			"maxNumPassages":    Exempt,
+		},
+		"concurrent": Exempt,
+		"count": map[string]interface{}{
+			"type":      Exempt,
+			"threshold": Exempt,
+		},
+		"searchAfter":        Redactable,
+		"searchBefore":       Redactable,
+		"scoreDetails":       Exempt,
+		"sort":               FieldName,
+		"returnStoredSource": Exempt,
+		"tracking":           map[string]interface{}{},
+	}
+	return agg
+}()

@@ -1,0 +1,98 @@
+{
+  "t": {
+    "$date": "2025-05-31T01:00:00.331+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn86736",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.my_coll",
+    "command": {
+      "aggregate": "my_coll",
+      "pipeline": [
+        {
+          "$search": {
+            "index": "default",
+            "text": {
+              "path": "title",
+              "query": "surfer"
+            }
+          }
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "title": 1,
+            "score": {
+              "$meta": "searchScore"
+            }
+          }
+        }
+      ],
+      "cursor": {},
+      "lsid": {
+        "id": {
+          "$uuid": "d86e5fcd-74b0-4105-ae4b-4f32a8f7c0ae"
+        }
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1748653180,
+            "i": 1
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "154HYrU4rymSY3fTTdUCUAS57VU=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7469113720208097282
+        }
+      },
+      "$db": "my_db"
+    },
+    "planSummary": "COLLSCAN",
+    "planningTimeMicros": 54,
+    "keysExamined": 0,
+    "docsExamined": 44393,
+    "cursorExhausted": true,
+    "numYields": 44,
+    "nreturned": 1,
+    "queryHash": "3185F81F",
+    "planCacheKey": "3185F81F",
+    "queryFramework": "classic",
+    "reslen": 278,
+    "locks": {
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "r": 46
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "r": 46
+        }
+      }
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "writeConcern": {
+      "w": "majority",
+      "wtimeout": 0,
+      "provenance": "implicitDefault"
+    },
+    "storage": {},
+    "cpuNanos": 40310400,
+    "remote": "20.40.131.128:49432",
+    "protocol": "op_msg",
+    "durationMillis": 40
+  }
+}
