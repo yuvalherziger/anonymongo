@@ -399,7 +399,6 @@ var SearchOperators = map[string]interface{}{
 		"allowAnalyzedField": Exempt,
 		"score":              Exempt,
 	},
-	"type":       Exempt,
 	"path":       FieldName,
 	"numBuckets": Exempt,
 }
