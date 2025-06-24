@@ -257,7 +257,7 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$match.status":              "REDACTED",
-				"command.pipeline.0.$match.createdAt.$lt.$date": "REDACTED",
+				"command.pipeline.0.$match.createdAt.$lt.$date": "1970-01-01T00:00:00.000Z",
 			},
 		},
 		{
@@ -372,8 +372,8 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			ExpectedPaths: map[string]interface{}{
 				"originatingCommand.pipeline.0.$match.str1":           "REDACTED",
 				"originatingCommand.pipeline.0.$match.str2":           "REDACTED",
-				"originatingCommand.pipeline.0.$match.cAt.$gte.$date": "REDACTED",
-				"originatingCommand.pipeline.0.$match.cAt.$lte.$date": "REDACTED",
+				"originatingCommand.pipeline.0.$match.cAt.$gte.$date": "1970-01-01T00:00:00.000Z",
+				"originatingCommand.pipeline.0.$match.cAt.$lte.$date": "1970-01-01T00:00:00.000Z",
 				"originatingCommand.pipeline.1.$lookup.from":          "other_coll",
 				"originatingCommand.pipeline.2.$project.other_docs":   float64(0),
 			},
@@ -397,7 +397,7 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				"command.pipeline.0.$match.status":                                                nil,
 				"command.pipeline.0.$match.createdAt.$lt.$date":                                   nil,
 				fmt.Sprintf("command.pipeline.0.$match.%s", HashFieldName("status")):              "REDACTED",
-				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashFieldName("createdAt")): "REDACTED",
+				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashFieldName("createdAt")): "1970-01-01T00:00:00.000Z",
 			},
 		},
 		{
