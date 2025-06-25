@@ -25,6 +25,8 @@ Redact sensitive values from MongoDB log files before sharing them, and preserve
 
 ---
 
+<img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="600">
+
 ## 1. Installation
 
 ### 1.1 Homebrew
@@ -49,14 +51,14 @@ is not trusted, please follow the instructions in [4. Adding anonymongo to trust
 Browse to this repository's [release page](https://github.com/yuvalherziger/anonymongo/releases) and
 download the latest stable release for your OS and architecture (e.g., `anonymongo_Windows_x86_64.zip`).
 
-Here's the full list of the latest stable (0.2.x) binaries for your convenience:
+Here's the full list of the latest stable (0.3.x) binaries for your convenience:
 
-- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Darwin_arm64.tar.gz)
-- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Darwin_x86_64.tar.gz)
-- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Windows_x86_64.zip)
-- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Windows_arm64.zip)
-- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Linux_arm64.tar.gz)
-- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.2.0/anonymongo_Linux_x86_64.tar.gz)
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.0/anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.0/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.0/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.0/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.0/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.0/anonymongo_Linux_x86_64.tar.gz)
 
 Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to allow the program explicitly.
 
