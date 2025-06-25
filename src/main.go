@@ -81,7 +81,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 				bar = progressbar.NewOptions64(int64(totalLines),
 					progressbar.OptionEnableColorCodes(true),
 					progressbar.OptionSetWidth(50),
-					progressbar.OptionSetDescription("Redacting logs..."),
+					progressbar.OptionSetDescription("Redacting MongoDB logs "),
 					progressbar.OptionSetTheme(progressbar.Theme{
 						Saucer:        "[green]=[reset]",
 						SaucerHead:    "[green]>[reset]",
@@ -92,9 +92,9 @@ You can provide input either as a file (as the first argument) or by piping logs
 					progressbar.OptionSetRenderBlankState(true),
 					progressbar.OptionSetPredictTime(false),
 					progressbar.OptionShowCount(),
-					progressbar.OptionOnCompletion(func() { fmt.Fprintln(os.Stderr) }),
-					progressbar.OptionSetWriter(os.Stderr),
-					progressbar.OptionThrottle(200*time.Millisecond), // Refresh at most every 200ms
+					progressbar.OptionOnCompletion(func() { fmt.Fprintln(os.Stdout) }),
+					progressbar.OptionSetWriter(os.Stdout),
+					progressbar.OptionThrottle(250*time.Millisecond),
 				)
 			}
 

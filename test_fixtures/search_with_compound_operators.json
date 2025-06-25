@@ -37,8 +37,72 @@
                           "value": true,
                           "path": "in_stock"
                         }
+                      },
+                      {
+                        "embeddedDocument": {
+                          "path": "items",
+                          "operator": {
+                            "compound": {
+                              "must": [
+                                {
+                                  "text": {
+                                    "path": "items.tags",
+                                    "query": "school"
+                                  }
+                                }
+                              ],
+                              "should": [
+                                {
+                                  "text": {
+                                    "path": "items.name",
+                                    "query": "backpack"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          "score": {
+                            "embedded": {
+                              "aggregate": "mean"
+                            }
+                          }
+                        }
                       }
                     ]
+                  }
+                },
+                {
+                  "exists": {
+                    "path": "quantities.lemons"
+                  }
+                },
+                {
+                  "geoShape": {
+                    "relation": "disjoint",
+                    "geometry": {
+                      "type": "Polygon",
+                      "coordinates": [
+                        [
+                          [
+                            -161.323242,
+                            22.512557
+                          ],
+                          [
+                            -152.446289,
+                            22.065278
+                          ],
+                          [
+                            -156.09375,
+                            17.811456
+                          ],
+                          [
+                            -161.323242,
+                            22.512557
+                          ]
+                        ]
+                      ]
+                    },
+                    "path": "address.location"
                   }
                 }
               ],

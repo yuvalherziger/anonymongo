@@ -3,11 +3,12 @@ package main
 type OperatorType int
 
 const (
-	Pipeline      OperatorType = iota // A nested pipeline
-	Exempt        OperatorType = iota // No need to redact exempted keys
-	Redactable    OperatorType = iota // Redact based on existing rules
-	FieldName     OperatorType = iota // Redact if eager redaction is used
+	Pipeline      OperatorType = iota
+	Exempt        OperatorType = iota
+	Redactable    OperatorType = iota
+	FieldName     OperatorType = iota
 	OperatorArray OperatorType = iota
+	OperatorMap   OperatorType = iota
 )
 
 var AggregationOperators = map[string]interface{}{
@@ -160,10 +161,10 @@ var CoreOperators = func() map[string]interface{} {
 		"$lte":           Redactable,
 		"$ne":            Redactable,
 		"$nin":           Redactable,
-		"$and":           Redactable,
+		"$and":           OperatorArray,
 		"$not":           Redactable,
 		"$nor":           Redactable,
-		"$or":            Redactable,
+		"$or":            OperatorArray,
 		"$exists":        Redactable,
 		"$type":          Redactable,
 		"$expr":          Redactable,
@@ -250,6 +251,14 @@ var CoreOperators = func() map[string]interface{} {
 	return coreOperators
 }()
 
+var OperatorMapDefs = map[string]interface{}{
+	"facets": map[string]interface{}{
+		"numBuckets": Exempt,
+		"type":       Exempt,
+		"path":       FieldName,
+	},
+}
+
 var geoJSON = map[string]interface{}{
 	"type":        Exempt,
 	"coordinates": Redactable,
@@ -270,11 +279,12 @@ var SearchOperators = map[string]interface{}{
 		"score":      Exempt,
 	},
 	"compound": map[string]interface{}{
-		"must":    OperatorArray,
-		"mustNot": OperatorArray,
-		"should":  OperatorArray,
-		"filter":  Redactable,
-		"score":   Exempt,
+		"must":               OperatorArray,
+		"mustNot":            OperatorArray,
+		"should":             OperatorArray,
+		"filter":             Redactable,
+		"score":              Exempt,
+		"minimumShouldMatch": Exempt,
 	},
 	"embeddedDocument": map[string]interface{}{
 		"path":     FieldName,
@@ -292,7 +302,7 @@ var SearchOperators = map[string]interface{}{
 	},
 	"facet": map[string]interface{}{
 		"operator": Redactable,
-		"facets":   map[string]interface{}{},
+		"facets":   OperatorMap,
 	},
 	"geoShape": map[string]interface{}{
 		"path":     FieldName,
@@ -399,7 +409,6 @@ var SearchOperators = map[string]interface{}{
 		"allowAnalyzedField": Exempt,
 		"score":              Exempt,
 	},
-	"path":       FieldName,
 	"numBuckets": Exempt,
 }
 
@@ -424,7 +433,18 @@ var SearchAggregationOperators = func() map[string]interface{} {
 		"returnStoredSource": Exempt,
 		"tracking":           map[string]interface{}{},
 	}
+	vectorSearch := map[string]interface{}{
+		"exact":         Exempt,
+		"filter":        Redactable,
+		"index":         Exempt,
+		"limit":         Exempt,
+		"numCandidates": Exempt,
+		"path":          FieldName,
+		"queryVector":   Redactable,
+	}
 	mergeMaps(search, SearchOperators)
 	agg["$search"] = search
+	agg["$searchMeta"] = search
+	agg["$vectorSearch"] = vectorSearch
 	return agg
 }()

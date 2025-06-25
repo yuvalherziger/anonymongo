@@ -59,3 +59,21 @@ func HashFieldName(field string) string {
 	}
 	return strings.Join(hashedParts, ".")
 }
+
+func RemoveElementAfter(slice []string, marker string) []string {
+	for i, v := range slice {
+		if v == marker && i+1 < len(slice) {
+			return append(slice[:i+1], slice[i+2:]...)
+		}
+	}
+	return slice
+}
+
+func RemoveElementsBeforeIncluding(slice []string, marker string) []string {
+	for i, v := range slice {
+		if v == marker && i+1 < len(slice) {
+			return slice[i+1:]
+		}
+	}
+	return []string{}
+}
