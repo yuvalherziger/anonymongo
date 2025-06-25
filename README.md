@@ -25,7 +25,7 @@ Redact sensitive values from MongoDB log files before sharing them, and preserve
 
 ---
 
-<img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="600">
+<img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="900">
 
 ## 1. Installation
 
