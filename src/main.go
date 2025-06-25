@@ -18,6 +18,7 @@ func main() {
 	var redactBooleans bool
 	var redactIPs bool
 	var outputFile string
+	var eagerRedactionPaths []string
 
 	var rootCmd = &cobra.Command{
 		Use:   "anonymongo [JSON file or gzipped MongoDB log file]",
@@ -52,6 +53,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 			SetRedactNumbers(redactNumbers)
 			SetRedactIPs(redactIPs)
 			SetRedactBooleans(redactBooleans)
+			SetEagerRedactionPaths(eagerRedactionPaths)
 
 			var outWriter *os.File
 			var err error
@@ -79,7 +81,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 				bar = progressbar.NewOptions64(int64(totalLines),
 					progressbar.OptionEnableColorCodes(true),
 					progressbar.OptionSetWidth(50),
-					progressbar.OptionSetDescription("Redacting logs..."),
+					progressbar.OptionSetDescription("Redacting MongoDB logs "),
 					progressbar.OptionSetTheme(progressbar.Theme{
 						Saucer:        "[green]=[reset]",
 						SaucerHead:    "[green]>[reset]",
@@ -90,9 +92,9 @@ You can provide input either as a file (as the first argument) or by piping logs
 					progressbar.OptionSetRenderBlankState(true),
 					progressbar.OptionSetPredictTime(false),
 					progressbar.OptionShowCount(),
-					progressbar.OptionOnCompletion(func() { fmt.Fprintln(os.Stderr) }),
-					progressbar.OptionSetWriter(os.Stderr),
-					progressbar.OptionThrottle(200*time.Millisecond), // Refresh at most every 200ms
+					progressbar.OptionOnCompletion(func() { fmt.Fprintln(os.Stdout) }),
+					progressbar.OptionSetWriter(os.Stdout),
+					progressbar.OptionThrottle(250*time.Millisecond),
 				)
 			}
 
@@ -123,8 +125,10 @@ You can provide input either as a file (as the first argument) or by piping logs
 	rootCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for redacted values")
 	rootCmd.Flags().BoolVarP(&redactNumbers, "redactNumbers", "n", false, "Redact numeric values to 0")
 	rootCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
-	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact IP addresses to 255.255.255.255")
+	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact network locations to 255.255.255.255:65535")
 	rootCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
+	rootCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
+addition to their values. The structure is either a namespace; e.g., 'dbName.collName'`)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

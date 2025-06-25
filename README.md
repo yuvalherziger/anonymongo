@@ -128,12 +128,14 @@ Available Commands:
   version     Print the version number
 
 Flags:
-  -h, --help                 help for anonymongo
-  -o, --outputFile string    Write output to file instead of stdout
-  -b, --redactBooleans       Redact boolean values to false
-  -i, --redactIPs            Redact IP addresses to 255.255.255.255
-  -n, --redactNumbers        Redact numeric values to 0
-  -r, --replacement string   Replacement string for redacted values (default "REDACTED")
+  -h, --help                             help for anonymongo
+  -o, --outputFile string                Write output to file instead of stdout
+  -z, --redact-field-names stringArray   [EXPERIMENTAL] Specify namespaces whose field names should be redacted in
+                                         addition to their values. The structure is either a namespace; e.g., 'dbName.collName'
+  -b, --redactBooleans                   Redact boolean values to false
+  -i, --redactIPs                        Redact network locations to 255.255.255.255:65535
+  -n, --redactNumbers                    Redact numeric values to 0
+  -r, --replacement string               Replacement string for redacted values (default "REDACTED")
 
 Use "anonymongo [command] --help" for more information about a command.
 ```
@@ -142,14 +144,14 @@ Examples:
 
 
 ```shell
+# Redact and write the results to a file
+anonymongo mongod.log --outputFile mongod.redacted.log
+
 # Redact logs and gzipped logs straight to standard output:
 anonymongo mongod.log
 
 # Pipe logs with stdin:
 cat mongod.log | grep "Slow query" | anonymongo
-
-# Redact and write the results to a file
-anonymongo mongod.log --outputFile mongod.redacted.log
 
 # Redact booleans to constant `false`
 anonymongo mongod.log --redactBooleans
@@ -163,6 +165,10 @@ anonymongo mongod.log --redactIPs
 # Change the default redaction replacement string
 anonymongo mongod.log --replacement "some other redaction placeholder"
 
+# Experimental feature: Redact field names in specific namespaces in addition to their values.
+anonymongo mongod.log --outputFile mongod.redacted.log \
+  --redact-field-names <namespace> \
+  --redact-field-names <namespace>
 ```
 
 ## 3. Tests
@@ -184,7 +190,7 @@ Below is an example of such element you can append to the parameterized cases:
   InputFile:     "test_data/expr_in_lookup_pipeline.json",
   Options:       setOptionsRedactedStrings,
   ExpectedPaths: map[string]interface{}{
-    "command.pipeline.1.$lookup.pipeline.0.$match.$expr.$eq.1": "000000000000000000000000",
+    "command.pipeline.1.$lookup.pipeline.0.$match.$expr.$eq.1": "REDACTED",
   },
 }
 ```

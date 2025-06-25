@@ -13,15 +13,16 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// processMongoLogStream reads from any io.Reader, redacts each line, and writes to outWriter.
-// If bar is not nil, it increments the progress bar for each line.
 func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
+		if line == "" && bar.State().CurrentNum == bar.GetMax64() {
+			bar.Add(1)
+			continue
+		}
 		redacted, err := RedactMongoLog(line)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to redact line: %v\n", err)
 			continue
 		}
 		out, err := json.Marshal(redacted)
@@ -40,8 +41,6 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.Pr
 	return nil
 }
 
-// ProcessMongoLogFile reads a MongoDB log file (plain or gzipped), redacts each entry, and writes the result.
-// If bar is not nil, it is updated as lines are processed.
 func ProcessMongoLogFile(filePath string, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	file, err := os.Open(filePath)
 	if err != nil {

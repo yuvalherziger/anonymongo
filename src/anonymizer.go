@@ -2,21 +2,19 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 )
 
-// LogEntry is a generic MongoDB log entry with dynamic Attr.
 type LogEntry struct {
-	T       interface{}     `json:"t"`
-	S       string          `json:"s"`
-	C       string          `json:"c"`
-	ID      int             `json:"id"`
-	Ctx     string          `json:"ctx"`
-	Msg     string          `json:"msg"`
-	Attr    Attr            `json:"attr"`
-	RawAttr json.RawMessage `json:"-"`
+	T    interface{} `json:"t"`
+	S    string      `json:"s"`
+	C    string      `json:"c"`
+	ID   int         `json:"id"`
+	Ctx  string      `json:"ctx"`
+	Msg  string      `json:"msg"`
+	Attr Attr        `json:"attr"`
 }
 
-// Attr is an interface for different attr types.
 type Attr interface {
 	Redact()
 }
@@ -26,7 +24,6 @@ type UnknownAttr struct {
 }
 
 func (a *UnknownAttr) Redact() {}
-
 func (a *UnknownAttr) MarshalJSON() ([]byte, error) {
 	if a.Raw == nil {
 		return []byte("{}"), nil
@@ -34,7 +31,6 @@ func (a *UnknownAttr) MarshalJSON() ([]byte, error) {
 	return a.Raw, nil
 }
 
-// NetworkAttr for NETWORK logs.
 type NetworkAttr struct {
 	Remote          string      `json:"remote"`
 	UUID            interface{} `json:"uuid"`
@@ -48,7 +44,24 @@ func (a *NetworkAttr) Redact() {
 	}
 }
 
-// SlowQueryAttr for COMMAND Slow query logs.
+type AccessLogAuthSuccessAttr struct {
+	Client          string                 `json:"client"`
+	IsSpeculative   bool                   `json:"isSpeculative"`
+	IsClusterMember bool                   `json:"isClusterMember"`
+	Mechanism       string                 `json:"mechanism"`
+	User            string                 `json:"user"`
+	Db              string                 `json:"db"`
+	Result          int                    `json:"result"`
+	Metrics         map[string]interface{} `json:"metrics"`
+	ExtraInfo       map[string]interface{} `json:"extraInfo"`
+}
+
+func (a *AccessLogAuthSuccessAttr) Redact() {
+	if redactIPs && a.Client != "" {
+		a.Client = "255.255.255.255:65535"
+	}
+}
+
 type SlowQueryAttr struct {
 	Type               string                 `json:"type"`
 	Ns                 string                 `json:"ns"`
@@ -71,22 +84,63 @@ type SlowQueryAttr struct {
 	DurationMillis     int                    `json:"durationMillis"`
 }
 
-type AccessLogAuthSuccessAttr struct {
-	Client          string                 `json:"client"`
-	IsSpeculative   bool                   `json:"isSpeculative"`
-	IsClusterMember bool                   `json:"isClusterMember"`
-	Mechanism       string                 `json:"mechanism"`
-	User            string                 `json:"user"`
-	Db              string                 `json:"db"`
-	Result          int                    `json:"result"`
-	Metrics         map[string]interface{} `json:"metrics"`
-	ExtraInfo       map[string]interface{} `json:"extraInfo"`
+func (l *LogEntry) UnmarshalJSON(data []byte) error {
+	type Alias LogEntry
+	aux := &struct {
+		Attr json.RawMessage `json:"attr"`
+		*Alias
+	}{
+		Alias: (*Alias)(l),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return nil
+	}
+
+	switch {
+	case aux.C == "NETWORK":
+		var attr NetworkAttr
+		_ = json.Unmarshal(aux.Attr, &attr)
+		l.Attr = &attr
+	case aux.C == "ACCESS" && aux.Msg == "Successfully authenticated":
+		var attr AccessLogAuthSuccessAttr
+		_ = json.Unmarshal(aux.Attr, &attr)
+		l.Attr = &attr
+	case aux.C == "COMMAND" && aux.Msg == "Slow query":
+		var attr SlowQueryAttr
+		_ = json.Unmarshal(aux.Attr, &attr)
+		l.Attr = &attr
+	default:
+		var attr UnknownAttr
+		attr.Raw = aux.Attr
+		l.Attr = &attr
+	}
+	return nil
 }
 
-func (a *AccessLogAuthSuccessAttr) Redact() {
-	if a.Client != "" && redactIPs {
-		a.Client = "255.255.255.255:65535"
+var (
+	redactedString       = "REDACTED"
+	redactNumbers        = false
+	redactBooleans       = false
+	redactIPs            = false
+	eagerRedactionPaths  []string
+	RedactedFieldMapping = map[string]string{}
+)
+
+func SetRedactedString(s string)            { redactedString = s }
+func SetRedactNumbers(b bool)               { redactNumbers = b }
+func SetRedactBooleans(b bool)              { redactBooleans = b }
+func SetRedactIPs(b bool)                   { redactIPs = b }
+func SetEagerRedactionPaths(paths []string) { eagerRedactionPaths = paths }
+
+func RedactMongoLog(jsonStr string) (*LogEntry, error) {
+	var entry LogEntry
+	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
+		return nil, err
 	}
+	if entry.Attr != nil {
+		entry.Attr.Redact()
+	}
+	return &entry, nil
 }
 
 func (a *SlowQueryAttr) Redact() {
@@ -94,246 +148,388 @@ func (a *SlowQueryAttr) Redact() {
 		a.Remote = "255.255.255.255:65535"
 	}
 
-	if cmd, ok := a.Command["query"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
-	}
-
-	if cmd, ok := a.OriginatingCommand["query"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
-	}
-
-	if cmd, ok := a.Command["update"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
-	}
-
-	if cmd, ok := a.OriginatingCommand["update"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
-	}
-
-	if updates, ok := a.Command["updates"].([]interface{}); ok {
-		for _, update := range updates {
-			if updateMap, ok := update.(map[string]interface{}); ok {
-				redactQueryValues(updateMap)
-			}
+	shouldEagerRedact := false
+	for _, path := range eagerRedactionPaths {
+		if strings.HasPrefix(a.Ns, path) {
+			shouldEagerRedact = true
+			break
 		}
 	}
 
-	if updates, ok := a.OriginatingCommand["updates"].([]interface{}); ok {
-		for _, update := range updates {
-			if updateMap, ok := update.(map[string]interface{}); ok {
-				redactQueryValues(updateMap)
-			}
-		}
-	}
+	redactCommand(a.Command, shouldEagerRedact)
+	redactCommand(a.OriginatingCommand, shouldEagerRedact)
 
-	if cmd, ok := a.Command["filter"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
-	}
-
-	if cmd, ok := a.OriginatingCommand["filter"].(map[string]interface{}); ok {
-		redactQueryValues(cmd)
-	}
-
-	if pipeline, ok := a.Command["pipeline"].([]interface{}); ok {
-		for _, stage := range pipeline {
-			redactPipelineStage(stage)
-		}
-	}
-
-	if pipeline, ok := a.OriginatingCommand["pipeline"].([]interface{}); ok {
-		for _, stage := range pipeline {
-			redactPipelineStage(stage)
-		}
-	}
-
-	// Redact "documents" in insert commands
-	if _, isInsert := a.Command["insert"]; isInsert {
-		if docs, ok := a.Command["documents"].([]interface{}); ok {
-			for _, doc := range docs {
-				if docMap, ok := doc.(map[string]interface{}); ok {
-					redactQueryValues(docMap)
-				}
-			}
-		}
-	}
-
-	if _, isInsert := a.OriginatingCommand["insert"]; isInsert {
-		if docs, ok := a.OriginatingCommand["documents"].([]interface{}); ok {
-			for _, doc := range docs {
-				if docMap, ok := doc.(map[string]interface{}); ok {
-					redactQueryValues(docMap)
-				}
-			}
-		}
+	if shouldEagerRedact {
+		a.PlanSummary = redactFieldNamesFromPlanSummary(a.PlanSummary)
 	}
 }
 
-// Recursively redact all values in a pipeline stage, not just $match
-func redactPipelineStage(stage interface{}) {
+func redactCommand(cmd map[string]interface{}, shouldEagerRedact bool) {
+	if cmd == nil {
+		return
+	}
+
+	if query, ok := cmd["query"].(map[string]interface{}); ok {
+		cmd["query"] = redactQueryValues(query, shouldEagerRedact, false)
+	}
+	if filter, ok := cmd["filter"].(map[string]interface{}); ok {
+		cmd["filter"] = redactQueryValues(filter, shouldEagerRedact, false)
+	}
+	if sort, ok := cmd["sort"].(map[string]interface{}); ok {
+		cmd["sort"] = redactQueryValues(sort, shouldEagerRedact, false)
+	}
+
+	if update, ok := cmd["update"].(map[string]interface{}); ok {
+		cmd["update"] = redactQueryValues(update, shouldEagerRedact, false)
+	}
+	if updates, ok := cmd["updates"].([]interface{}); ok {
+		cmd["updates"] = redactArrayValues(updates, shouldEagerRedact, false)
+	}
+
+	if _, isInsert := cmd["insert"]; isInsert {
+		if docs, ok := cmd["documents"].([]interface{}); ok {
+			cmd["documents"] = redactArrayValues(docs, shouldEagerRedact, false)
+		}
+	}
+
+	if pipeline, ok := cmd["pipeline"].([]interface{}); ok {
+		newPipeline := make([]interface{}, len(pipeline))
+		for i, stage := range pipeline {
+			inSearchStage := isInSearchStage(stage)
+			newPipeline[i] = redactPipelineStage(stage, shouldEagerRedact, []string{}, inSearchStage)
+		}
+		cmd["pipeline"] = newPipeline
+	}
+}
+
+func redactFieldNamesFromPlanSummary(planSummary string) string {
+	if planSummary == "COLLSCAN" {
+		return planSummary
+	}
+	result := planSummary
+	fieldNames := ParsePlanSummary(planSummary)
+	for _, fieldName := range fieldNames {
+		hashed := HashFieldName(fieldName)
+		result = strings.ReplaceAll(result, fieldName, hashed)
+	}
+	return result
+}
+
+func traverseMapPath(path []string, operatorMap map[string]interface{}, isSearchStage bool) (interface{}, bool) {
+	var current any = operatorMap
+	isOpMap := false
+	cutOffPart := ""
+	for i, part := range path {
+		m, ok := current.(map[string]interface{})
+		if !ok {
+			return nil, false
+		}
+		val, exists := m[part]
+		if !exists {
+			return nil, false
+		}
+		current = val
+		if len(path) > i+1 && current == OperatorArray {
+			if isSearchStage {
+				return traverseMapPath(path[i+1:], SearchOperators, true)
+			} else {
+				return traverseMapPath(path[i+1:], CoreOperators, false)
+			}
+
+		}
+		if current == OperatorMap {
+			isOpMap = true
+			cutOffPart = part
+			break
+		}
+	}
+	if isOpMap {
+		opVal := OperatorMapDefs[cutOffPart]
+		withoutArbitraryKey := RemoveElementAfter(path, cutOffPart)
+		newPath := RemoveElementsBeforeIncluding(withoutArbitraryKey, cutOffPart)
+		if len(newPath) < len(path) {
+			if opValMap, ok := opVal.(map[string]interface{}); ok {
+				return traverseMapPath(newPath, opValMap, isSearchStage)
+			}
+		}
+	}
+
+	if current != nil {
+		return current, true
+	}
+	return nil, false
+}
+
+func getOp(keyPath []string, isSearchStage bool) (interface{}, bool) {
+	if !isSearchStage {
+		coreOpMeta, isCoreOp := CoreOperators[keyPath[len(keyPath)-1]]
+		if isCoreOp {
+			return coreOpMeta, true
+		}
+		aggOpMeta, isAggOp := traverseMapPath(keyPath, AggregationOperators, false)
+		if isAggOp {
+			return aggOpMeta, true
+		}
+	} else {
+		searchOpMeta, isSearchOp := traverseMapPath(keyPath, SearchAggregationOperators, true)
+		if isSearchOp {
+			return searchOpMeta, true
+		}
+		coreSearchOpMeta, isCoreSearchOp := SearchOperators[keyPath[len(keyPath)-1]]
+		if isCoreSearchOp {
+			return coreSearchOpMeta, true
+		}
+	}
+	return nil, false
+}
+
+func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []string, inSearchStage bool) interface{} {
+
 	switch s := stage.(type) {
 	case map[string]interface{}:
-		// $lookup: only redact the $lookup.pipeline array if present
-		if lookup, ok := s["$lookup"].(map[string]interface{}); ok {
-			if pipeline, ok := lookup["pipeline"].([]interface{}); ok {
-				for _, pstage := range pipeline {
-					redactPipelineStage(pstage)
-				}
+		newMap := make(map[string]interface{}, len(s))
+		for k, v := range s {
+			redactedKey := k
+			newKeyPath := append(keyPath, k)
+			opMeta, isOp := getOp(newKeyPath, inSearchStage)
+			if redactFieldNames && (!isOp || (isOp && opMeta == nil)) {
+				redactedKey = HashFieldName(k)
 			}
-			return
-		}
-		// $project: do not redact top-level numeric values
-		if project, ok := s["$project"].(map[string]interface{}); ok {
-			for k, v := range project {
-				switch vTyped := v.(type) {
-				case map[string]interface{}:
-					redactQueryValues(vTyped)
-				case []interface{}:
-					redactArrayValues(vTyped)
-					project[k] = vTyped
-				default:
-					// Only redact if not a number (float64, int, int64)
-					switch vTyped.(type) {
-					case float64, int, int64:
-						// Do not redact numeric values
-						project[k] = vTyped
-					default:
-						if v != nil {
-							// If it's a string starting with "$", don't redact
-							if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
-								project[k] = v
+			switch meta := opMeta.(type) {
+			case OperatorType:
+				switch meta {
+				case FieldName:
+					if redactFieldNames {
+						switch vTyped := v.(type) {
+						case string:
+							if len(keyPath) > 0 {
+								newMap[redactedKey] = vTyped
+							} else if _, isOp := getOp([]string{vTyped}, inSearchStage); isOp {
+								newMap[redactedKey] = vTyped
 							} else {
-								project[k] = redactedValue(v)
+								newMap[redactedKey] = HashFieldName(vTyped)
+							}
+						case map[string]interface{}:
+							newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, newKeyPath, inSearchStage)
+						case []interface{}:
+							newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames, inSearchStage)
+						default:
+							newMap[redactedKey] = redactScalarValue([]string{k}, v, inSearchStage)
+						}
+					} else {
+						newMap[redactedKey] = v
+					}
+					continue
+				case Exempt:
+					newMap[redactedKey] = v
+					continue
+				case Pipeline:
+					if arr, ok := v.([]interface{}); ok {
+						newMap[redactedKey] = redactArrayValues(arr, redactFieldNames, inSearchStage)
+					} else {
+						newMap[redactedKey] = v
+					}
+					continue
+				case OperatorArray:
+					if arr, ok := v.([]interface{}); ok {
+						redactedArr := make([]interface{}, len(arr))
+						for i, elem := range arr {
+							redactedArr[i] = redactPipelineStage(elem, redactFieldNames, newKeyPath, inSearchStage)
+						}
+						newMap[redactedKey] = redactedArr
+					} else {
+						newMap[redactedKey] = v
+					}
+					continue
+				}
+			case map[string]interface{}:
+				if subMap, ok := v.(map[string]interface{}); ok {
+					newSubMap := make(map[string]interface{}, len(subMap))
+					for subK, subV := range subMap {
+						subMeta, subFound := meta[subK]
+						if subFound {
+							switch subMetaTyped := subMeta.(type) {
+							case OperatorType:
+								switch subMetaTyped {
+								case FieldName:
+									if redactFieldNames {
+										switch subVTyped := subV.(type) {
+										case string:
+											if _, isOp := getOp([]string{subVTyped}, inSearchStage); isOp {
+												newSubMap[subK] = subVTyped
+											} else {
+												newSubMap[subK] = HashFieldName(subVTyped)
+											}
+										case map[string]interface{}:
+											newSubMap[subK] = redactPipelineStage(subVTyped, redactFieldNames, append(newKeyPath, subK), inSearchStage)
+										case []interface{}:
+											newSubMap[subK] = redactArrayValues(subVTyped, redactFieldNames, inSearchStage)
+										default:
+											newSubMap[subK] = redactScalarValue([]string{k}, subV, inSearchStage)
+										}
+									} else {
+										newSubMap[subK] = subV
+									}
+									continue
+								case Exempt:
+									newSubMap[subK] = subV
+									continue
+								case OperatorArray:
+									if arr, ok := subV.([]interface{}); ok {
+										redactedArr := make([]interface{}, len(arr))
+										for i, elem := range arr {
+											redactedArr[i] = redactPipelineStage(elem, redactFieldNames, newKeyPath, inSearchStage)
+										}
+										newSubMap[subK] = redactedArr
+									} else {
+										newSubMap[subK] = subV
+									}
+									continue
+								case Pipeline:
+									if arr, ok := subV.([]interface{}); ok {
+										newSubMap[subK] = redactArrayValues(arr, redactFieldNames, inSearchStage)
+									} else {
+										newSubMap[subK] = subV
+									}
+									continue
+								}
+							default:
 							}
 						}
-					}
-				}
-			}
-			return
-		}
-		redactQueryValues(s)
-		for _, v := range s {
-			redactPipelineStage(v)
-		}
-	case []interface{}:
-		for _, item := range s {
-			redactPipelineStage(item)
-		}
-	}
-}
-
-// Recursively redact all leaf values in the query object, except nulls
-func redactQueryValues(obj map[string]interface{}) {
-	for k, v := range obj {
-		switch val := v.(type) {
-		case map[string]interface{}:
-			redactQueryValues(val)
-		case []interface{}:
-			for i, item := range val {
-				switch itemTyped := item.(type) {
-				case map[string]interface{}:
-					redactQueryValues(itemTyped)
-				case []interface{}:
-					redactArrayValues(itemTyped)
-					val[i] = itemTyped
-				default:
-					if item != nil {
-						// If it's a string starting with "$", don't redact
-						if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
-							val[i] = item
-						} else {
-							val[i] = redactedValue(item)
+						redactedSubK := subK
+						if redactFieldNames && (!subFound || (subFound && meta[subK] == nil)) {
+							redactedSubK = HashFieldName(subK)
+						}
+						switch subVTyped := subV.(type) {
+						case map[string]interface{}:
+							newSubMap[redactedSubK] = redactPipelineStage(subVTyped, redactFieldNames, append(newKeyPath, subK), inSearchStage)
+						case []interface{}:
+							newSubMap[redactedSubK] = redactArrayValues(subVTyped, redactFieldNames, inSearchStage)
+						default:
+							newSubMap[redactedSubK] = redactScalarValue([]string{k}, subV, inSearchStage)
 						}
 					}
+					newMap[redactedKey] = newSubMap
+					continue
 				}
 			}
-			obj[k] = val
+
+			if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' && !redactFieldNames {
+				newMap[redactedKey] = v
+				continue
+			}
+
+			switch vTyped := v.(type) {
+			case map[string]interface{}:
+				newMap[redactedKey] = redactPipelineStage(vTyped, redactFieldNames, newKeyPath, inSearchStage)
+			case []interface{}:
+				newMap[redactedKey] = redactArrayValues(vTyped, redactFieldNames, inSearchStage)
+			default:
+				// TODO: scalar values must also look at complex paths recursively?
+				newMap[redactedKey] = redactScalarValue(newKeyPath, v, inSearchStage)
+			}
+		}
+		return newMap
+	case []interface{}:
+		return redactArrayValues(s, redactFieldNames, inSearchStage)
+	default:
+		return stage
+	}
+}
+
+func redactQueryValues(obj map[string]interface{}, redactFieldNames bool, isSearchStage bool) map[string]interface{} {
+	newObj := make(map[string]interface{}, len(obj))
+	for k, v := range obj {
+		redactedKey := k
+		if redactFieldNames {
+			if _, isOp := CoreOperators[k]; !isOp {
+				redactedKey = HashFieldName(k)
+			}
+		}
+		switch val := v.(type) {
+		case map[string]interface{}:
+			newObj[redactedKey] = redactQueryValues(val, redactFieldNames, isSearchStage)
+		case []interface{}:
+			newObj[redactedKey] = redactArrayValuesWithKey(k, val, redactFieldNames, isSearchStage)
 		default:
-			// Only replace if not nil (null in JSON)
 			if v != nil {
-				// If it's a string starting with "$", don't redact
 				if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
-					obj[k] = v
+					isOp := false
+					if _, ok := CoreOperators[str]; ok {
+						isOp = true
+					}
+					if redactFieldNames && !isOp {
+						newObj[redactedKey] = HashFieldName(str)
+					} else {
+						newObj[redactedKey] = v
+					}
 				} else {
-					obj[k] = redactedValue(v)
+					newObj[redactedKey] = redactScalarValue([]string{k}, v, isSearchStage)
 				}
 			}
 		}
 	}
+	return newObj
 }
 
-// Helper to recursively redact arrays of values
-func redactArrayValues(arr []interface{}) {
+func redactArrayValuesWithKey(parentKey string, arr []interface{}, redactFieldNames bool, isSearchStage bool) []interface{} {
 	for i, item := range arr {
 		switch itemTyped := item.(type) {
 		case map[string]interface{}:
-			redactQueryValues(itemTyped)
+			arr[i] = redactQueryValues(itemTyped, redactFieldNames, isSearchStage)
 		case []interface{}:
-			redactArrayValues(itemTyped)
-			arr[i] = itemTyped
+			arr[i] = redactArrayValuesWithKey(parentKey, itemTyped, redactFieldNames, isSearchStage)
 		default:
 			if item != nil {
-				// If it's a string starting with "$", don't redact
 				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
-					arr[i] = item
+					isOp := false
+					if _, ok := CoreOperators[str]; ok {
+						isOp = true
+					}
+					if redactFieldNames && !isOp {
+						arr[i] = HashFieldName(str)
+					} else {
+						arr[i] = item
+					}
 				} else {
-					arr[i] = redactedValue(item)
+					arr[i] = redactScalarValue([]string{parentKey}, item, isSearchStage)
 				}
 			}
 		}
 	}
+	return arr
 }
 
-var redactedString = "REDACTED"
-var redactNumbers = false
-var redactBooleans = false
-var redactIPs = false
-
-func SetRedactedString(s string) {
-	redactedString = s
+func redactArrayValues(arr []interface{}, redactFieldNames bool, isSearchStage bool) []interface{} {
+	return redactArrayValuesWithKey("", arr, redactFieldNames, isSearchStage)
 }
 
-func SetRedactNumbers(b bool) {
-	redactNumbers = b
-}
+func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool) interface{} {
+	key := ""
+	if len(keyPath) == 0 {
+		key = ""
+	} else {
+		op, isOp := getOp(keyPath, isSearchStage)
+		if !isOp {
+			key = keyPath[len(keyPath)-1]
+		} else {
+			if op == Exempt {
+				return v
+			}
+		}
 
-func SetRedactBooleans(b bool) {
-	redactBooleans = b
-}
-
-func SetRedactIPs(b bool) {
-	redactIPs = b
-}
-
-// Return a generic redacted value based on the type
-func redactedValue(v interface{}) interface{} {
-	switch val := v.(type) {
+	}
+	key = keyPath[len(keyPath)-1]
+	switch key {
+	case "$date":
+		return "1970-01-01T00:00:00.000Z"
+	case "$oid":
+		return "000000000000000000000000"
+	}
+	switch v.(type) {
 	case string:
-		// Check if it's a 24-character hex string (MongoDB ObjectID)
-		if len(val) == 24 {
-			isHex := true
-			for i := 0; i < 24; i++ {
-				c := val[i]
-				if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
-					isHex = false
-					break
-				}
-			}
-			if isHex {
-				return "000000000000000000000000"
-			}
-		}
 		return redactedString
-	case float64:
-		if redactNumbers {
-			return 0
-		}
-		return v
-	case int:
-		if redactNumbers {
-			return 0
-		}
-		return v
-	case int64:
+	case float64, int, int64:
 		if redactNumbers {
 			return 0
 		}
@@ -348,61 +544,13 @@ func redactedValue(v interface{}) interface{} {
 	}
 }
 
-func (l *LogEntry) UnmarshalJSON(data []byte) error {
-	type Alias LogEntry
-	aux := &struct {
-		Attr json.RawMessage `json:"attr"`
-		*Alias
-	}{
-		Alias: (*Alias)(l),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return nil
-	}
-
-	l.RawAttr = aux.Attr
-
-	switch {
-	case aux.C == "NETWORK":
-		var attr NetworkAttr
-		if err := json.Unmarshal(aux.Attr, &attr); err != nil {
-			var attr UnknownAttr
-			attr.Raw = aux.Attr
-			l.Attr = &attr
+func isInSearchStage(stage interface{}) bool {
+	if m, ok := stage.(map[string]interface{}); ok {
+		for k := range m {
+			if k == "$search" || k == "$searchMeta" || k == "$vectorSearch" {
+				return true
+			}
 		}
-		l.Attr = &attr
-	case aux.C == "ACCESS" && aux.Msg == "Successfully authenticated":
-		var attr AccessLogAuthSuccessAttr
-		if err := json.Unmarshal(aux.Attr, &attr); err != nil {
-			var attr UnknownAttr
-			attr.Raw = aux.Attr
-			l.Attr = &attr
-		}
-		l.Attr = &attr
-	case aux.C == "COMMAND" && aux.Msg == "Slow query":
-		var attr SlowQueryAttr
-		if err := json.Unmarshal(aux.Attr, &attr); err != nil {
-			var attr UnknownAttr
-			attr.Raw = aux.Attr
-			l.Attr = &attr
-		}
-		l.Attr = &attr
-	default:
-		var attr UnknownAttr
-		attr.Raw = aux.Attr
-		l.Attr = &attr
 	}
-	return nil
-}
-
-// RedactMongoLog takes a JSON string, redacts remote, and returns the modified object.
-func RedactMongoLog(jsonStr string) (*LogEntry, error) {
-	var entry LogEntry
-	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
-		return nil, err
-	}
-	if entry.Attr != nil {
-		entry.Attr.Redact()
-	}
-	return &entry, nil
+	return false
 }
