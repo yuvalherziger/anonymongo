@@ -13,10 +13,32 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+// FileReader defines the interface for file system operations needed by ProcessMongoLogFile.
+// This allows mocking file system access in tests.
+type FileReader interface {
+	Open(filePath string) (io.ReadCloser, error)
+	GetExtension(filePath string) string
+}
+
+// DefaultFileReader implements FileReader using standard os and filepath functions.
+type DefaultFileReader struct{}
+
+// Open implements the Open method of FileReader using os.Open.
+func (d *DefaultFileReader) Open(filePath string) (io.ReadCloser, error) {
+	return os.Open(filePath)
+}
+
+// GetExtension implements the GetExtension method of FileReader using filepath.Ext.
+func (d *DefaultFileReader) GetExtension(filePath string) string {
+	return strings.ToLower(filepath.Ext(filePath))
+}
+
 func addOneToBar(bar *progressbar.ProgressBar) {
 	if bar != nil {
 		err := bar.Add(1)
 		if err != nil {
+			// In a real application, you might log this error.
+			// For a progress bar, silently returning is often acceptable.
 			return
 		}
 	}
@@ -26,10 +48,13 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.Pr
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "" && bar.State().CurrentNum == bar.GetMax64() {
+		// Ensure bar is not nil before accessing its state to prevent panics.
+		// The condition itself (empty line at max progress) is specific to the original logic.
+		if line == "" && bar != nil && bar.State().CurrentNum == bar.GetMax64() {
 			addOneToBar(bar)
 			continue
 		}
+		// RedactMongoLog is not provided in the context, assuming it's defined elsewhere.
 		redacted, err := RedactMongoLog(line)
 		if err != nil {
 			addOneToBar(bar)
@@ -41,9 +66,8 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.Pr
 			continue
 		}
 		fmt.Fprintln(outWriter, string(out))
-		if bar != nil {
-			addOneToBar(bar)
-		}
+		// addOneToBar already handles the nil check for 'bar', so no need for an 'if' here.
+		addOneToBar(bar)
 	}
 	if err := scanner.Err(); err != nil {
 		return err
@@ -51,14 +75,17 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.Pr
 	return nil
 }
 
-func ProcessMongoLogFile(filePath string, outWriter io.Writer, bar *progressbar.ProgressBar) error {
-	file, err := os.Open(filePath)
+// ProcessMongoLogFile processes a MongoDB log file from the given filePath.
+// It now accepts a FileReader interface, allowing for dependency injection.
+// In production, you would pass &DefaultFileReader{}. In tests, you can pass a mock.
+func ProcessMongoLogFile(fileReader FileReader, filePath string, outWriter io.Writer, bar *progressbar.ProgressBar) error {
+	file, err := fileReader.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	ext := strings.ToLower(filepath.Ext(filePath))
+	ext := fileReader.GetExtension(filePath)
 	if ext == ".gz" {
 		gzReader, err := gzip.NewReader(file)
 		if err != nil {
@@ -71,7 +98,7 @@ func ProcessMongoLogFile(filePath string, outWriter io.Writer, bar *progressbar.
 }
 
 // ProcessMongoLogFileFromReader reads from any io.Reader (such as stdin), redacts each line, and writes the result.
-// Progress bar is not used for stdin.
+// This function remains unchanged as it already accepts an io.Reader and doesn't directly access the filesystem.
 func ProcessMongoLogFileFromReader(r io.Reader, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	return processMongoLogStream(r, outWriter, bar)
 }

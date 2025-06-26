@@ -68,48 +68,52 @@ You can provide input either as a file (as the first argument) or by piping logs
 				outWriter = os.Stdout
 			}
 
-			// Progress bar logic
-			var bar *progressbar.ProgressBar
-			if inputFile != "" && outputFile != "" {
-				// Only count lines if both input and output files are provided
-				totalLines, err := countLines(inputFile)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error counting lines: %v\n", err)
-					os.Exit(1)
-				}
-				// bar = progressbar.Default(int64(totalLines))
-				bar = progressbar.NewOptions64(int64(totalLines),
-					progressbar.OptionEnableColorCodes(true),
-					progressbar.OptionSetWidth(50),
-					progressbar.OptionSetDescription("Redacting MongoDB logs..."),
-					progressbar.OptionSetTheme(progressbar.Theme{
-						Saucer:        "[green]=[reset]",
-						SaucerHead:    "[green]>[reset]",
-						SaucerPadding: " ",
-						BarStart:      "[",
-						BarEnd:        "]",
-					}),
-					progressbar.OptionSetRenderBlankState(true),
-					progressbar.OptionSetPredictTime(false),
-					progressbar.OptionShowCount(),
-					progressbar.OptionShowIts(),
-					progressbar.OptionSetItsString("entries"),
-					progressbar.OptionShowElapsedTimeOnFinish(),
-					progressbar.OptionOnCompletion(func() {
-						fmt.Fprintln(os.Stdout, "\n\nRedaction complete - finalizing output...")
-					}),
-					progressbar.OptionSetWriter(os.Stdout),
-					progressbar.OptionThrottle(250*time.Millisecond),
-				)
-			}
-
 			if useStdin {
 				if err := ProcessMongoLogFileFromReader(os.Stdin, outWriter, nil); err != nil {
 					fmt.Fprintf(os.Stderr, "Error processing stdin: %v\n", err)
 					os.Exit(1)
 				}
 			} else {
-				if err := ProcessMongoLogFile(inputFile, outWriter, bar); err != nil {
+				// Instantiate the default file reader for production use.
+				// This is the concrete implementation of our FileReader interface.
+				fileReader := &DefaultFileReader{}
+
+				// Progress bar logic
+				var bar *progressbar.ProgressBar
+				if outputFile != "" {
+					// Only count lines if both input and output files are provided
+					totalLines, err := countLines(fileReader, inputFile)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error counting lines: %v\n", err)
+						os.Exit(1)
+					}
+					bar = progressbar.NewOptions64(int64(totalLines),
+						progressbar.OptionEnableColorCodes(true),
+						progressbar.OptionSetWidth(50),
+						progressbar.OptionSetDescription("Redacting MongoDB logs..."),
+						progressbar.OptionSetTheme(progressbar.Theme{
+							Saucer:        "[green]=[reset]",
+							SaucerHead:    "[green]>[reset]",
+							SaucerPadding: " ",
+							BarStart:      "[",
+							BarEnd:        "]",
+						}),
+						progressbar.OptionSetRenderBlankState(true),
+						progressbar.OptionSetPredictTime(false),
+						progressbar.OptionShowCount(),
+						progressbar.OptionShowIts(),
+						progressbar.OptionSetItsString("entries"),
+						progressbar.OptionShowElapsedTimeOnFinish(),
+						progressbar.OptionOnCompletion(func() {
+							fmt.Fprintln(os.Stdout, "\n\nRedaction complete - finalizing output...")
+						}),
+						progressbar.OptionSetWriter(os.Stdout),
+						progressbar.OptionThrottle(250*time.Millisecond),
+					)
+				}
+
+				// Pass the fileReader instance to the processing function.
+				if err := ProcessMongoLogFile(fileReader, inputFile, outWriter, bar); err != nil {
 					fmt.Fprintf(os.Stderr, "Error processing log file: %v\n", err)
 					os.Exit(1)
 				}
@@ -141,9 +145,9 @@ addition to their values. The structure is either a namespace; e.g., 'dbName.col
 	}
 }
 
-// countLines returns the number of lines in a file.
-func countLines(filename string) (int, error) {
-	f, err := os.Open(filename)
+// countLines returns the number of lines in a file using a FileReader.
+func countLines(fileReader FileReader, filename string) (int, error) {
+	f, err := fileReader.Open(filename)
 	if err != nil {
 		return 0, err
 	}
