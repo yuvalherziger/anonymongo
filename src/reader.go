@@ -13,26 +13,36 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+func addOneToBar(bar *progressbar.ProgressBar) {
+	if bar != nil {
+		err := bar.Add(1)
+		if err != nil {
+			return
+		}
+	}
+}
+
 func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" && bar.State().CurrentNum == bar.GetMax64() {
-			bar.Add(1)
+			addOneToBar(bar)
 			continue
 		}
 		redacted, err := RedactMongoLog(line)
 		if err != nil {
+			addOneToBar(bar)
 			continue
 		}
 		out, err := json.Marshal(redacted)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to marshal redacted log: %v\n", err)
+			addOneToBar(bar)
 			continue
 		}
 		fmt.Fprintln(outWriter, string(out))
 		if bar != nil {
-			bar.Add(1)
+			addOneToBar(bar)
 		}
 	}
 	if err := scanner.Err(); err != nil {
