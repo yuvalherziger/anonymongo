@@ -46,19 +46,6 @@ binary_signs:
 signs:
   - artifacts: checksum
 
-winget:
-  - name: anonymongo
-    publisher: Yuval Herziger <yuvalhrz@gmail.com>
-    short_description: A CLI tool to redact sensitive values from MongoDB log files
-    license: mit
-    license_url: https://github.com/yuvalherziger/anonymongo/blob/main/LICENSE
-    publisher_url: https://github.com/yuvalherziger/anonymongo
-    publisher_support_url: https://github.com/yuvalherziger/anonymongo/issues/new
-    repository: https://github.com/yuvalherziger/anonymongo
-
-
-
-
 homebrew_casks:
   -
     name: anonymongo
