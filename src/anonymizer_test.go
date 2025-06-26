@@ -240,6 +240,7 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.foo": "REDACTED",
 				"command.filter.bar": "REDACTED",
+				"nreturned":          float64(1),
 			},
 		},
 		{
