@@ -3,6 +3,7 @@
 [![Tests](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml)
 [![Build](https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml)
 [![Release](https://img.shields.io/github/v/release/yuvalherziger/anonymongo?label=release)](https://github.com/yuvalherziger/anonymongo/releases)
+[![codecov](https://codecov.io/gh/yuvalherziger/anonymongo/graph/badge.svg?token=JT2HX1Q0FX)](https://codecov.io/gh/yuvalherziger/anonymongo)
 
 ---
 
