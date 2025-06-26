@@ -40,12 +40,6 @@ changelog:
       - "^docs:"
       - "^test:"
 
-binary_signs:
-  - {}
-
-signs:
-  - artifacts: checksum
-
 homebrew_casks:
   -
     name: anonymongo
