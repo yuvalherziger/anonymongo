@@ -82,6 +82,7 @@ type SlowQueryAttr struct {
 	Remote             string                 `json:"remote"`
 	Protocol           string                 `json:"protocol"`
 	DurationMillis     int                    `json:"durationMillis"`
+	NReturned          int                    `json:"nreturned"`
 }
 
 func (l *LogEntry) UnmarshalJSON(data []byte) error {
