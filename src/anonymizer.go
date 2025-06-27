@@ -6,13 +6,17 @@ import (
 )
 
 type LogEntry struct {
-	T    interface{} `json:"t"`
-	S    string      `json:"s"`
-	C    string      `json:"c"`
-	ID   int         `json:"id"`
-	Ctx  string      `json:"ctx"`
-	Msg  string      `json:"msg"`
-	Attr Attr        `json:"attr"`
+	T         interface{}            `json:"t"`
+	S         string                 `json:"s"`
+	C         string                 `json:"c"`
+	ID        int                    `json:"id"`
+	Ctx       string                 `json:"ctx"`
+	Svc       string                 `json:"svc"`
+	Msg       string                 `json:"msg"`
+	Attr      Attr                   `json:"attr"`
+	Tags      []string               `json:"tags"`
+	Truncated map[string]interface{} `json:"truncated"`
+	Size      map[string]interface{} `json:"size"`
 }
 
 type Attr interface {
@@ -62,27 +66,80 @@ func (a *AccessLogAuthSuccessAttr) Redact() {
 	}
 }
 
+// Reference: https://github.com/mongodb/mongo/blob/master/src/mongo/db/op_debug.cpp
+
 type SlowQueryAttr struct {
-	Type               string                 `json:"type"`
-	Ns                 string                 `json:"ns"`
-	Command            map[string]interface{} `json:"command"`
-	OriginatingCommand map[string]interface{} `json:"originatingCommand"`
-	PlanSummary        string                 `json:"planSummary"`
-	KeysExamined       int                    `json:"keysExamined"`
-	DocsExamined       int                    `json:"docsExamined"`
-	NumYields          int                    `json:"numYields"`
-	QueryHash          string                 `json:"queryHash"`
-	PlanCacheKey       string                 `json:"planCacheKey"`
-	QueryFramework     string                 `json:"queryFramework"`
-	Reslen             int                    `json:"reslen"`
-	Locks              map[string]interface{} `json:"locks"`
-	ReadConcern        map[string]interface{} `json:"readConcern"`
-	Storage            map[string]interface{} `json:"storage"`
-	CpuNanos           int64                  `json:"cpuNanos"`
-	Remote             string                 `json:"remote"`
-	Protocol           string                 `json:"protocol"`
-	DurationMillis     int                    `json:"durationMillis"`
-	NReturned          int                    `json:"nreturned"`
+	Type                                 string                 `json:"type"`
+	IsFromUserConnection                 bool                   `json:"isFromUserConnection"`
+	Ns                                   string                 `json:"ns"`
+	CollectionType                       interface{}            `json:"collectionType"`
+	AppName                              string                 `json:"appName"`
+	QueryShapeHash                       string                 `json:"queryShapeHash"`
+	Command                              map[string]interface{} `json:"command"`
+	OriginatingCommand                   map[string]interface{} `json:"originatingCommand"`
+	PlanSummary                          string                 `json:"planSummary"`
+	PlanningTimeMicros                   int                    `json:"planningTimeMicros"`
+	EstimatedCost                        interface{}            `json:"estimatedCost"`
+	EstimatedCardinality                 int                    `json:"estimatedCardinality"`
+	PrepareConflictDuration              int                    `json:"prepareConflictDuration"`
+	CatalogCacheDatabaseLookupDuration   int                    `json:"catalogCacheDatabaseLookupDuration"`
+	CatalogCacheCollectionLookupDuration int                    `json:"catalogCacheCollectionLookupDuration"`
+	CatalogCacheIndexLookupDuration      int                    `json:"catalogCacheIndexLookupDuration"`
+	DatabaseVersionRefreshDuration       int                    `json:"databaseVersionRefreshDuration"`
+	PlacementVersionRefreshDuration      int                    `json:"placementVersionRefreshDuration"`
+	TotalOplogSlotDuration               int                    `json:"totalOplogSlotDuration"`
+	ResolvedViews                        interface{}            `json:"resolvedViews"`
+	Mongot                               interface{}            `json:"mongot"`
+	KeysExamined                         int                    `json:"keysExamined"`
+	DocsExamined                         int                    `json:"docsExamined"`
+	HasSortStage                         bool                   `json:"hasSortStage"`
+	UsedDisk                             bool                   `json:"usedDisk"`
+	FromMultiPlanner                     bool                   `json:"fromMultiPlanner"`
+	FromPlanCache                        bool                   `json:"fromPlanCache"`
+	ReplanReason                         string                 `json:"replanReason"`
+	NMatched                             int                    `json:"nMatched"`
+	NBatches                             int                    `json:"nBatches"`
+	NModified                            int                    `json:"nModified"`
+	Ninserted                            int                    `json:"ninserted"`
+	Ndeleted                             int                    `json:"ndeleted"`
+	NUpserted                            int                    `json:"nUpserted"`
+	CursorExhausted                      bool                   `json:"cursorExhausted"`
+	KeysInserted                         int                    `json:"keysInserted"`
+	KeysDeleted                          int                    `json:"keysDeleted"`
+	DataThroughputLastSecondMBperSec     int                    `json:"dataThroughputLastSecondMBperSec"`
+	DataThroughputAverageMBPerSec        interface{}            `json:"dataThroughputAverageMBPerSec"`
+	PrepareReadConflicts                 interface{}            `json:"prepareReadConflicts"`
+	WriteConflicts                       interface{}            `json:"writeConflicts"`
+	StorageInterruptResponseNanos        interface{}            `json:"storageInterruptResponseNanos"`
+	TemporarilyUnavailableErrors         interface{}            `json:"temporarilyUnavailableErrors"`
+	NumYields                            int                    `json:"numYields"`
+	NReturned                            int                    `json:"nreturned"`
+	InUseMemBytes                        int                    `json:"inUseMemBytes"`
+	MaxUsedMemBytes                      int                    `json:"maxUsedMemBytes"`
+	PlanCacheShapeHash                   interface{}            `json:"planCacheShapeHash"`
+	QueryHash                            string                 `json:"queryHash"`
+	QueryFramework                       string                 `json:"queryFramework"`
+	PlanCacheKey                         string                 `json:"planCacheKey"`
+	Ok                                   int                    `json:"ok"`
+	ErrName                              string                 `json:"errName"`
+	ErrCode                              int                    `json:"errCode"`
+	Reslen                               int                    `json:"reslen"`
+	Locks                                map[string]interface{} `json:"locks"`
+	Authorization                        interface{}            `json:"authorization"`
+	LDAPOperations                       interface{}            `json:"LDAPOperations"`
+	FlowControl                          interface{}            `json:"flowControl"`
+	ReadConcern                          map[string]interface{} `json:"readConcern"`
+	WriteConcern                         map[string]interface{} `json:"writeConcern"`
+	WaitForWriteConcernDuration          int                    `json:"waitForWriteConcernDuration"`
+	Storage                              map[string]interface{} `json:"storage"`
+	CpuNanos                             int64                  `json:"cpuNanos"`
+	Remote                               string                 `json:"remote"`
+	Protocol                             string                 `json:"protocol"`
+	RemoteOpWaitMillis                   int                    `json:"remoteOpWaitMillis"`
+	Queues                               interface{}            `json:"queues"`
+	WorkingMillis                        int                    `json:"workingMillis"`
+	InterruptLatencyNanos                int                    `json:"interruptLatencyNanos"`
+	DurationMillis                       int                    `json:"durationMillis"`
 }
 
 func (l *LogEntry) UnmarshalJSON(data []byte) error {
@@ -106,7 +163,7 @@ func (l *LogEntry) UnmarshalJSON(data []byte) error {
 		var attr AccessLogAuthSuccessAttr
 		_ = json.Unmarshal(aux.Attr, &attr)
 		l.Attr = &attr
-	case aux.C == "COMMAND" && aux.Msg == "Slow query":
+	case aux.Msg == "Slow query":
 		var attr SlowQueryAttr
 		_ = json.Unmarshal(aux.Attr, &attr)
 		l.Attr = &attr
