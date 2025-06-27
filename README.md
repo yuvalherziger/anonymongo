@@ -34,13 +34,13 @@ Redact sensitive values from MongoDB log files before sharing them, and preserve
 
 ### 1.1 Homebrew
 
-Run the following to install anonymongo with Homebrew on your macOS:
+Run the following command to install anonymongo with Homebrew on your macOS:
 
 ```shell
 brew install --cask yuvalherziger/anonymongo/anonymongo
 ```
 
-Run to the following to verify the installation:
+Run the following command to verify the installation:
 
 ```shell
 anonymongo version
@@ -63,7 +63,7 @@ Here's the full list of the latest stable (0.3.x) binaries for your convenience:
 - [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.3/anonymongo_Linux_arm64.tar.gz)
 - [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.3.3/anonymongo_Linux_x86_64.tar.gz)
 
-Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to allow the program explicitly.
+Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to trust the program explicitly.
 
 ```shell
 anonymongo version
@@ -88,7 +88,7 @@ To build and run `anonymongo` from source, follow these steps:
     make build
     ```
 
-    This will create an executable named `anonymongo` in the project root.
+    This will create an executable named `anonymongo` under the `./dist` directory.
 
 3. **Run the application**
 
@@ -136,7 +136,7 @@ Flags:
   -h, --help                             help for anonymongo
   -o, --outputFile string                Write output to file instead of stdout
   -z, --redact-field-names stringArray   [EXPERIMENTAL] Specify namespaces whose field names should be redacted in
-                                         addition to their values. The structure is either a namespace; e.g., 'dbName.collName'
+                                         addition to their values. The structure is a namespace; e.g., 'dbName.collName'
   -b, --redactBooleans                   Redact boolean values to false
   -i, --redactIPs                        Redact network locations to 255.255.255.255:65535
   -n, --redactNumbers                    Redact numeric values to 0
@@ -179,7 +179,7 @@ anonymongo mongod.log --outputFile mongod.redacted.log \
 ## 3. Tests
 
 Every new refactoring case must be covered by a test to ensure the expected results are yielded and no
-regression is introducesd. The source code contains a single unit test: [./src/anonymizer_test.go](./src/anonymizer_test.go).
+regression is introducesd. The source code contains a specific unit test: [./src/anonymizer_test.go](./src/anonymizer_test.go).
 It's a parameterized unit test, where each test is a go struct with the following information:
 
 * Test name (e.g., "$expr redaction inside $lookup stage")
