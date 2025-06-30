@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -11,21 +12,93 @@ import (
 // Ensure stdin is declared for test swapping.
 var stdin io.ReadCloser
 
-func TestMainExecution(t *testing.T) {
+func TestMainWithStdIn(t *testing.T) {
 	input := "{\"t\":{\"$date\":\"2025-05-30T09:47:39.001+00:00\"},\"s\":\"I\",\"c\":\"COMMAND\",\"id\":51803,\"ctx\":\"conn87195\",\"msg\":\"Slow query\",\"attr\":{\"type\":\"command\",\"ns\":\"my_db.my_coll\",\"appName\":\"my_app\",\"command\":{\"find\":\"my_coll\",\"filter\":{\"foo\":\"simple string\",\"bar\":\"another simple string\"},\"sort\":{\"_id\":-1},\"limit\":1,\"lsid\":{\"id\":{\"$uuid\":\"7938452b-c804-4245-8eed-d64238a3096e\"}},\"$clusterTime\":{\"clusterTime\":{\"$timestamp\":{\"t\":1748598458,\"i\":30}},\"signature\":{\"hash\":{\"$binary\":{\"base64\":\"YIwPO0EBX2vevOytJne/wzScXMU=\",\"subType\":\"0\"}},\"keyId\":7469113720208097000}},\"$db\":\"my_db\"},\"planSummary\":\"IXSCAN { foo: 1, bar: 1, _id: -1 }\",\"planningTimeMicros\":43226,\"keysExamined\":540,\"docsExamined\":494,\"hasSortStage\":true,\"fromPlanCache\":true,\"nBatches\":1,\"cursorExhausted\":true,\"numYields\":3,\"nreturned\":1,\"queryHash\":\"B134177D\",\"planCacheKey\":\"A13D1BF0\",\"queryFramework\":\"classic\",\"reslen\":1531,\"locks\":{\"FeatureCompatibilityVersion\":{\"acquireCount\":{\"r\":4}},\"Global\":{\"acquireCount\":{\"r\":4}}},\"readConcern\":{\"level\":\"local\",\"provenance\":\"implicitDefault\"},\"storage\":{\"data\":{\"bytesRead\":38805493,\"timeReadingMicros\":21587}},\"cpuNanos\":24778600,\"remote\":\"20.40.131.128:11803\",\"protocol\":\"op_msg\",\"durationMillis\":43}}\n"
-	originalStdin := os.Stdin
-	defer func() { os.Stdin = originalStdin }()
 
+	// Keep original os.Stdin and os.Stdout to restore them after the test.
+	originalStdin := os.Stdin
+	originalStdout := os.Stdout
+	defer func() {
+		os.Stdin = originalStdin
+		os.Stdout = originalStdout
+	}()
+
+	// Mock stdin by creating a pipe and writing the input to it.
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("Failed to create pipe for stdin mocking: %v", err)
 	}
 	os.Stdin = r
 
+	// Mock stdout to discard any output from main(), preventing test log clutter.
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("Failed to open %s: %v", os.DevNull, err)
+	}
+	os.Stdout = devNull
+	defer devNull.Close()
+
+	// Write input to the stdin pipe in a separate goroutine.
 	go func() {
 		defer w.Close()
-		w.WriteString(input)
+		if _, err := w.WriteString(input); err != nil {
+			// Use t.Error to report the error without stopping the test immediately,
+			// allowing other cleanup to run.
+			t.Errorf("Failed to write to stdin pipe: %v", err)
+		}
 	}()
+
+	// Execute the main function.
+	main()
+}
+
+func TestMainWithFileInputAndOutput(t *testing.T) {
+	// Arrange: Create a temporary directory for test artifacts.
+	// t.TempDir handles creation and automatic cleanup.
+	tempDir := t.TempDir()
+
+	// Create a fixture directory and the input log file within the temp directory.
+	// This makes the test self-contained, assuming a ./test_fixtures/mongod.log
+	// might not exist in all test environments.
+	fixtureDir := filepath.Join(tempDir, "test_fixtures")
+	if err := os.MkdirAll(fixtureDir, 0755); err != nil {
+		t.Fatalf("Failed to create fixture directory: %v", err)
+	}
+	inputFilePath := filepath.Join(fixtureDir, "mongod.log")
+
+	// This is the content we'll write to our test input file.
+	// It contains two log lines to ensure multi-line processing works.
+	inputFileContent := "{\"t\":{\"$date\":\"2025-05-30T09:47:39.001+00:00\"},\"s\":\"I\",\"c\":\"COMMAND\",\"id\":51803,\"ctx\":\"conn87195\",\"msg\":\"Slow query\",\"attr\":{\"type\":\"command\",\"ns\":\"my_db.my_coll\",\"appName\":\"my_app\",\"command\":{\"find\":\"my_coll\",\"filter\":{\"foo\":\"simple string\",\"bar\":\"another simple string\"},\"sort\":{\"_id\":-1},\"limit\":1,\"lsid\":{\"id\":{\"$uuid\":\"7938452b-c804-4245-8eed-d64238a3096e\"}},\"$clusterTime\":{\"clusterTime\":{\"$timestamp\":{\"t\":1748598458,\"i\":30}},\"signature\":{\"hash\":{\"$binary\":{\"base64\":\"YIwPO0EBX2vevOytJne/wzScXMU=\",\"subType\":\"0\"}},\"keyId\":7469113720208097000}},\"$db\":\"my_db\"},\"planSummary\":\"IXSCAN { foo: 1, bar: 1, _id: -1 }\",\"planningTimeMicros\":43226,\"keysExamined\":540,\"docsExamined\":494,\"hasSortStage\":true,\"fromPlanCache\":true,\"nBatches\":1,\"cursorExhausted\":true,\"numYields\":3,\"nreturned\":1,\"queryHash\":\"B134177D\",\"planCacheKey\":\"A13D1BF0\",\"queryFramework\":\"classic\",\"reslen\":1531,\"locks\":{\"FeatureCompatibilityVersion\":{\"acquireCount\":{\"r\":4}},\"Global\":{\"acquireCount\":{\"r\":4}}},\"readConcern\":{\"level\":\"local\",\"provenance\":\"implicitDefault\"},\"storage\":{\"data\":{\"bytesRead\":38805493,\"timeReadingMicros\":21587}},\"cpuNanos\":24778600,\"remote\":\"20.40.131.128:11803\",\"protocol\":\"op_msg\",\"durationMillis\":43}}\n"
+
+	if err := os.WriteFile(inputFilePath, []byte(inputFileContent), 0644); err != nil {
+		t.Fatalf("Failed to write to input file: %v", err)
+	}
+
+	// Define the path for the output file, which will also be in the temp directory.
+	outputFilePath := filepath.Join(tempDir, "output.log")
+
+	// Keep original os.Args and os.Stdout to restore them after the test.
+	originalArgs := os.Args
+	originalStdout := os.Stdout
+	defer func() {
+		os.Args = originalArgs
+		os.Stdout = originalStdout
+	}()
+
+	// Set the command-line arguments to simulate running from the terminal.
+	// The first argument is always the program name.
+	os.Args = []string{"anonymongo", inputFilePath, "--outputFile", outputFilePath}
+
+	// Redirect stdout to a no-op writer to keep test logs clean.
+	// The main program might print progress indicators, which we want to ignore.
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("Failed to open %s: %v", os.DevNull, err)
+	}
+	defer devNull.Close()
+	os.Stdout = devNull
+
+	// Act: Execute the main function with our mocked arguments.
 	main()
 }
 
