@@ -3,9 +3,31 @@ package main
 import (
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"testing"
 )
+
+// Ensure stdin is declared for test swapping.
+var stdin io.ReadCloser
+
+func TestMainExecution(t *testing.T) {
+	input := "{\"t\":{\"$date\":\"2025-05-30T09:47:39.001+00:00\"},\"s\":\"I\",\"c\":\"COMMAND\",\"id\":51803,\"ctx\":\"conn87195\",\"msg\":\"Slow query\",\"attr\":{\"type\":\"command\",\"ns\":\"my_db.my_coll\",\"appName\":\"my_app\",\"command\":{\"find\":\"my_coll\",\"filter\":{\"foo\":\"simple string\",\"bar\":\"another simple string\"},\"sort\":{\"_id\":-1},\"limit\":1,\"lsid\":{\"id\":{\"$uuid\":\"7938452b-c804-4245-8eed-d64238a3096e\"}},\"$clusterTime\":{\"clusterTime\":{\"$timestamp\":{\"t\":1748598458,\"i\":30}},\"signature\":{\"hash\":{\"$binary\":{\"base64\":\"YIwPO0EBX2vevOytJne/wzScXMU=\",\"subType\":\"0\"}},\"keyId\":7469113720208097000}},\"$db\":\"my_db\"},\"planSummary\":\"IXSCAN { foo: 1, bar: 1, _id: -1 }\",\"planningTimeMicros\":43226,\"keysExamined\":540,\"docsExamined\":494,\"hasSortStage\":true,\"fromPlanCache\":true,\"nBatches\":1,\"cursorExhausted\":true,\"numYields\":3,\"nreturned\":1,\"queryHash\":\"B134177D\",\"planCacheKey\":\"A13D1BF0\",\"queryFramework\":\"classic\",\"reslen\":1531,\"locks\":{\"FeatureCompatibilityVersion\":{\"acquireCount\":{\"r\":4}},\"Global\":{\"acquireCount\":{\"r\":4}}},\"readConcern\":{\"level\":\"local\",\"provenance\":\"implicitDefault\"},\"storage\":{\"data\":{\"bytesRead\":38805493,\"timeReadingMicros\":21587}},\"cpuNanos\":24778600,\"remote\":\"20.40.131.128:11803\",\"protocol\":\"op_msg\",\"durationMillis\":43}}\n"
+	originalStdin := os.Stdin
+	defer func() { os.Stdin = originalStdin }()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe for stdin mocking: %v", err)
+	}
+	os.Stdin = r
+
+	go func() {
+		defer w.Close()
+		w.WriteString(input)
+	}()
+	main()
+}
 
 // TestCountLines verifies the line counting logic against various inputs.
 func TestCountLines(t *testing.T) {
