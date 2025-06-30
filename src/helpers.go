@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
+
 func ParsePlanSummary(planSummary string) []string {
 	re := regexp.MustCompile(`IXSCAN\s*\{([^}]+)\}`)
 	allMatches := re.FindAllStringSubmatch(planSummary, -1)
@@ -76,4 +78,11 @@ func RemoveElementsBeforeIncluding(slice []string, marker string) []string {
 		}
 	}
 	return []string{}
+}
+
+func IsEmail(email string) bool {
+	if len(email) < 3 || len(email) > 254 {
+		return false
+	}
+	return emailRegex.MatchString(email)
 }

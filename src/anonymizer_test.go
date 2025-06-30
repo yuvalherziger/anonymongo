@@ -543,7 +543,8 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				fmt.Sprintf("command.pipeline.0.$searchMeta.facet.facets.%s.type", HashFieldName("yearFacet")): "number",
 				fmt.Sprintf("command.pipeline.0.$searchMeta.facet.facets.%s.path", HashFieldName("yearFacet")): "year",
 			},
-		}, {
+		},
+		{
 			Name:      "Vector search",
 			InputFile: "vector_search.json",
 			Options:   setOptionsRedactedAll,
@@ -553,6 +554,45 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 				"command.pipeline.0.$vectorSearch.queryVector.0": float64(0),
 				"command.pipeline.0.$vectorSearch.numCandidates": float64(150),
 				"command.pipeline.0.$vectorSearch.limit":         float64(10),
+			},
+		},
+		{
+			Name:      "Find with binary data",
+			InputFile: "find_with_binary_data.json",
+			Options:   setOptionsRedactedStrings,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.uuid.$binary.subType": "04",
+				"command.filter.uuid.$binary.base64":  "REDACTED",
+				"planningTimeMicros":                  float64(43226),
+				"keysExamined":                        float64(1),
+				"docsExamined":                        float64(1),
+				"hasSortStage":                        false,
+				"fromPlanCache":                       true,
+			},
+		},
+		{
+			Name:      "Find with binary data and eager redaction",
+			InputFile: "find_with_binary_data.json",
+			Options:   setOptionsRedactedStringsWithEagerRedaction,
+			ExpectedPaths: map[string]interface{}{
+				fmt.Sprintf("command.filter.%s.$binary.subType", HashFieldName("uuid")): "04",
+				fmt.Sprintf("command.filter.%s.$binary.base64", HashFieldName("uuid")):  "REDACTED",
+				"planningTimeMicros": float64(43226),
+				"keysExamined":       float64(1),
+				"docsExamined":       float64(1),
+				"hasSortStage":       false,
+				"fromPlanCache":      true,
+			},
+		},
+		{
+			Name:      "Find with email addresses",
+			InputFile: "find_with_emails.json",
+			Options:   setOptionsRedactedStrings,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.$or.0.username": "redacted@redacted.com",
+				"command.filter.$or.1.username": "redacted@redacted.com",
+				"command.filter.$or.2.username": "redacted@redacted.com",
+				"command.filter.$or.3.username": "redacted@redacted.com",
 			},
 		},
 	}

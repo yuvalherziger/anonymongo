@@ -1,4 +1,4 @@
-name: Dependency Vulnerability Check
+name: Vulnerabilities Check
 
 on: [push]
 
