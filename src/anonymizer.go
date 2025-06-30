@@ -322,9 +322,6 @@ func getOp(keyPath []string, isSearchStage bool) (interface{}, bool) {
 	if !isSearchStage {
 		coreOpMeta, isCoreOp := CoreOperators[keyPath[len(keyPath)-1]]
 		if isCoreOp {
-			if keyPath[len(keyPath)-1] == "$binary" {
-				println("### ---------------------------------------> getOp keyPath last element:", keyPath[len(keyPath)-1])
-			}
 			return coreOpMeta, true
 		}
 		aggOpMeta, isAggOp := traverseMapPath(keyPath, AggregationOperators, false)
