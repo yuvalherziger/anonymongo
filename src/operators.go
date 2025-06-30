@@ -246,6 +246,10 @@ var CoreOperators = func() map[string]interface{} {
 		"if":   Redactable,
 		"then": Redactable,
 		"else": Redactable,
+		"$binary": map[string]interface{}{
+			"base64":  Redactable,
+			"subType": Exempt,
+		},
 	}
 	mergeMaps(coreOperators, AggregationOperators)
 	return coreOperators

@@ -228,17 +228,17 @@ func redactCommand(cmd map[string]interface{}, shouldEagerRedact bool) {
 	}
 
 	if query, ok := cmd["query"].(map[string]interface{}); ok {
-		cmd["query"] = redactQueryValues(query, shouldEagerRedact, false)
+		cmd["query"] = redactQueryValues(query, shouldEagerRedact, false, nil)
 	}
 	if filter, ok := cmd["filter"].(map[string]interface{}); ok {
-		cmd["filter"] = redactQueryValues(filter, shouldEagerRedact, false)
+		cmd["filter"] = redactQueryValues(filter, shouldEagerRedact, false, nil)
 	}
 	if sort, ok := cmd["sort"].(map[string]interface{}); ok {
-		cmd["sort"] = redactQueryValues(sort, shouldEagerRedact, false)
+		cmd["sort"] = redactQueryValues(sort, shouldEagerRedact, false, nil)
 	}
 
 	if update, ok := cmd["update"].(map[string]interface{}); ok {
-		cmd["update"] = redactQueryValues(update, shouldEagerRedact, false)
+		cmd["update"] = redactQueryValues(update, shouldEagerRedact, false, nil)
 	}
 	if updates, ok := cmd["updates"].([]interface{}); ok {
 		cmd["updates"] = redactArrayValues(updates, shouldEagerRedact, false)
@@ -322,6 +322,9 @@ func getOp(keyPath []string, isSearchStage bool) (interface{}, bool) {
 	if !isSearchStage {
 		coreOpMeta, isCoreOp := CoreOperators[keyPath[len(keyPath)-1]]
 		if isCoreOp {
+			if keyPath[len(keyPath)-1] == "$binary" {
+				println("### ---------------------------------------> getOp keyPath last element:", keyPath[len(keyPath)-1])
+			}
 			return coreOpMeta, true
 		}
 		aggOpMeta, isAggOp := traverseMapPath(keyPath, AggregationOperators, false)
@@ -495,18 +498,30 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 	}
 }
 
-func redactQueryValues(obj map[string]interface{}, redactFieldNames bool, isSearchStage bool) map[string]interface{} {
+func redactQueryValues(obj map[string]interface{}, redactFieldNames bool, isSearchStage bool, parentCoreOp interface{}) map[string]interface{} {
 	newObj := make(map[string]interface{}, len(obj))
 	for k, v := range obj {
 		redactedKey := k
+		var isOp bool
+		var coreOp interface{}
+		if parentCoreOp != nil {
+			if parentMap, ok := parentCoreOp.(map[string]interface{}); ok {
+				coreOp, isOp = parentMap[k]
+			} else {
+				coreOp, isOp = CoreOperators[k]
+			}
+		} else {
+			coreOp, isOp = CoreOperators[k]
+		}
+
 		if redactFieldNames {
-			if _, isOp := CoreOperators[k]; !isOp {
+			if !isOp {
 				redactedKey = HashFieldName(k)
 			}
 		}
 		switch val := v.(type) {
 		case map[string]interface{}:
-			newObj[redactedKey] = redactQueryValues(val, redactFieldNames, isSearchStage)
+			newObj[redactedKey] = redactQueryValues(val, redactFieldNames, isSearchStage, coreOp)
 		case []interface{}:
 			newObj[redactedKey] = redactArrayValuesWithKey(k, val, redactFieldNames, isSearchStage)
 		default:
@@ -522,7 +537,11 @@ func redactQueryValues(obj map[string]interface{}, redactFieldNames bool, isSear
 						newObj[redactedKey] = v
 					}
 				} else {
-					newObj[redactedKey] = redactScalarValue([]string{k}, v, isSearchStage)
+					if coreOp != Exempt {
+						newObj[redactedKey] = redactScalarValue([]string{k}, v, isSearchStage)
+					} else {
+						newObj[redactedKey] = v
+					}
 				}
 			}
 		}
@@ -534,7 +553,7 @@ func redactArrayValuesWithKey(parentKey string, arr []interface{}, redactFieldNa
 	for i, item := range arr {
 		switch itemTyped := item.(type) {
 		case map[string]interface{}:
-			arr[i] = redactQueryValues(itemTyped, redactFieldNames, isSearchStage)
+			arr[i] = redactQueryValues(itemTyped, redactFieldNames, isSearchStage, nil)
 		case []interface{}:
 			arr[i] = redactArrayValuesWithKey(parentKey, itemTyped, redactFieldNames, isSearchStage)
 		default:
@@ -584,8 +603,13 @@ func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool) inte
 	case "$oid":
 		return "000000000000000000000000"
 	}
+
 	switch v.(type) {
 	case string:
+		str := v.(string)
+		if IsEmail(str) {
+			return "redacted@redacted.com"
+		}
 		return redactedString
 	case float64, int, int64:
 		if redactNumbers {
