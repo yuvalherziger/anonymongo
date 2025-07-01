@@ -14,7 +14,7 @@ build:
 
 test:
 	@echo "Running tests..."
-	$(GO) test -v $(PKG)
+	$(GO) test $(PKG)
 
 fmt:
 	@echo "Formatting code..."

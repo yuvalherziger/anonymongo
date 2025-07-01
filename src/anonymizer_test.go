@@ -84,16 +84,25 @@ func splitPath(path string) []string {
 	return parts
 }
 
-// Updated getJSONPath to use splitPath
-func getJSONPath(m map[string]interface{}, path string) interface{} {
+// Updated getJSONPath to use OrderedMap
+func getJSONPath(m interface{}, path string) interface{} {
 	parts := splitPath(path)
 	var v interface{} = m
 	for _, p := range parts {
 		switch vv := v.(type) {
+		case OrderedMap:
+			val, _ := vv.Get(p)
+			v = val
 		case map[string]interface{}:
 			v = vv[p]
-		case []interface{}:
+		case []OrderedMap:
 			// Try to parse p as an index
+			idx, err := strconv.Atoi(p)
+			if err != nil || idx < 0 || idx >= len(vv) {
+				return nil
+			}
+			v = vv[idx]
+		case []any:
 			idx, err := strconv.Atoi(p)
 			if err != nil || idx < 0 || idx >= len(vv) {
 				return nil
@@ -627,11 +636,11 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			if err != nil {
 				t.Fatalf("RedactMongoLog failed: %v", err)
 			}
-			attrBytes, _ := json.Marshal(entry.Attr)
-			var attrMap map[string]interface{}
-			_ = json.Unmarshal(attrBytes, &attrMap)
+			// attrBytes, _ := MarshalOrdered(entry.Attr)
+			// var attrMap OrderedMap
+			// attrMap, _ = UnmarshalOrdered(attrBytes)
 			for path, want := range tc.ExpectedPaths {
-				got := getJSONPath(attrMap, path)
+				got := getJSONPath(entry.Attr, path)
 				if !valuesEqual(got, want) {
 					t.Errorf("expected %s to be %s, got %s", path, getTypeInfo(want), getTypeInfo(got))
 				}
