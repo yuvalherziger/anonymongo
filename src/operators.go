@@ -1,5 +1,9 @@
 package main
 
+import "github.com/elliotchance/orderedmap/v3"
+
+type OrderedMap = *orderedmap.OrderedMap[string, any]
+
 type OperatorType int
 
 const (
@@ -11,444 +15,468 @@ const (
 	OperatorMap   OperatorType = iota
 )
 
-var AggregationOperators = map[string]interface{}{
-	"$addFields": Redactable,
-	"$bucket": map[string]interface{}{
-		"boundaries": Redactable,
-		"default":    Redactable,
-		"output":     Redactable,
-		"groupBy":    FieldName,
-	},
-	"$bucketAuto": map[string]interface{}{
-		"granularity": Redactable,
-		"output":      Redactable,
-		"buckets":     Redactable,
-		"groupBy":     Redactable,
-	},
-	"$changeStream": map[string]interface{}{
-		"allChangesForCluster":     Redactable,
-		"fullDocument":             Redactable,
-		"fullDocumentBeforeChange": Redactable,
-		"resumeAfter":              Redactable,
-		"showExpandedEvents":       Redactable,
-		"startAfter":               Redactable,
-		"startAtOperationTime":     Redactable,
-	},
-	"$changeStreamSplitLargeEvent": Redactable,
-	"$collStats": map[string]interface{}{
-		"latencyStats":   Redactable,
-		"storageStats":   Redactable,
-		"count":          Redactable,
-		"queryExecStats": Redactable,
-	},
-	"$count": FieldName,
-	"$currentOp": map[string]interface{}{
-		"allUsers":        Redactable,
-		"idleConnections": Redactable,
-		"idleCursors":     Redactable,
-		"idleSessions":    Redactable,
-		"localOps":        Redactable,
-	},
-	"$densify": map[string]interface{}{
-		"field":             FieldName,
-		"partitionByFields": Redactable,
-		"range": map[string]interface{}{
-			"step":   Exempt,
-			"units":  Exempt,
-			"bounds": Redactable,
-		},
-	},
-	"$documents": Redactable,
-	"$facet":     Pipeline,
-	"$fill": map[string]interface{}{
-		"partitionByFields": FieldName,
-		"partitionBy":       Redactable,
-		"sortBy":            FieldName,
-		"output":            Redactable,
-	},
-	"$geoNear": map[string]interface{}{
-		"distanceField":      FieldName,
-		"distanceMultiplier": Redactable,
-		"includeLocs":        Redactable,
-		"key":                Redactable,
-		"maxDistance":        Redactable,
-		"minDistance":        Redactable,
-		"near":               Redactable,
-		"query":              Redactable,
-		"spherical":          Redactable,
-	},
-	"$graphLookup": map[string]interface{}{
-		"from":                    Exempt,
-		"startWith":               Redactable,
-		"connectFromField":        FieldName,
-		"connectToField":          FieldName,
-		"as":                      Redactable,
-		"maxDepth":                Redactable,
-		"depthField":              FieldName,
-		"restrictSearchWithMatch": Redactable,
-	},
-	"$group":      Redactable,
-	"$indexStats": Redactable,
-	"$limit":      Exempt,
-	"$listLocalSessions": map[string]interface{}{
-		"users":    Redactable,
-		"allUsers": Redactable,
-	},
-	"$listSampledQueries": map[string]interface{}{"namespace": nil},
-	"$listSearchIndexes": map[string]interface{}{
-		"id":   Redactable,
-		"name": Redactable,
-	},
-	"$listSessions": map[string]interface{}{
-		"users":    Redactable,
-		"allUsers": Redactable,
-	},
-	"$lookup": map[string]interface{}{
-		"from":         Exempt,
-		"localField":   Redactable,
-		"foreignField": Redactable,
-		"let":          Redactable,
-		"pipeline":     Pipeline,
-		"as":           Exempt,
-	},
-	"$match": Redactable,
-	"$merge": map[string]interface{}{
-		"into":           Exempt,
-		"on":             Redactable,
-		"let":            Redactable,
-		"whenMatched":    Exempt,
-		"whenNotMatched": Exempt,
-	},
-	"$out": map[string]interface{}{
-		"db":         Exempt,
-		"coll":       Exempt,
-		"timeseries": Exempt,
-	},
-	"$planCacheStats": Exempt,
-	"$project":        Redactable,
-	"$querySettings":  Exempt,
-	"$queryStats":     Exempt,
-	"$redact":         Redactable,
-	"$replaceRoot":    map[string]interface{}{"newRoot": FieldName},
-	"$replaceWith":    Redactable,
-	"$sample":         Exempt,
-	"$set":            Redactable,
-	"$setWindowFields": map[string]interface{}{
-		"partitionBy": Redactable,
-		"sortBy":      FieldName,
-		"output":      Redactable,
-		"window":      Redactable,
-	},
-	"$shardedDataDistribution": Exempt,
-	"$skip":                    Exempt,
-	"$sort":                    Redactable,
-	"$sortByCount":             FieldName,
-	"$unionWith": map[string]interface{}{
-		"coll":     Exempt,
-		"pipeline": Pipeline,
-	},
-	"$unset":  FieldName,
-	"$unwind": FieldName,
-}
+var AggregationOperators = func() OrderedMap {
+	m := orderedmap.NewOrderedMap[string, any]()
+	m.Set("$addFields", Redactable)
+	bucket := orderedmap.NewOrderedMap[string, any]()
+	bucket.Set("boundaries", Redactable)
+	bucket.Set("default", Redactable)
+	bucket.Set("output", Redactable)
+	bucket.Set("groupBy", FieldName)
+	m.Set("$bucket", bucket)
+	bucketAuto := orderedmap.NewOrderedMap[string, any]()
+	bucketAuto.Set("granularity", Redactable)
+	bucketAuto.Set("output", Redactable)
+	bucketAuto.Set("buckets", Redactable)
+	bucketAuto.Set("groupBy", Redactable)
+	m.Set("$bucketAuto", bucketAuto)
+	changeStream := orderedmap.NewOrderedMap[string, any]()
+	changeStream.Set("allChangesForCluster", Redactable)
+	changeStream.Set("fullDocument", Redactable)
+	changeStream.Set("fullDocumentBeforeChange", Redactable)
+	changeStream.Set("resumeAfter", Redactable)
+	changeStream.Set("showExpandedEvents", Redactable)
+	changeStream.Set("startAfter", Redactable)
+	changeStream.Set("startAtOperationTime", Redactable)
+	m.Set("$changeStream", changeStream)
+	m.Set("$changeStreamSplitLargeEvent", Redactable)
+	collStats := orderedmap.NewOrderedMap[string, any]()
+	collStats.Set("latencyStats", Redactable)
+	collStats.Set("storageStats", Redactable)
+	collStats.Set("count", Redactable)
+	collStats.Set("queryExecStats", Redactable)
+	m.Set("$collStats", collStats)
+	m.Set("$count", FieldName)
+	currentOp := orderedmap.NewOrderedMap[string, any]()
+	currentOp.Set("allUsers", Redactable)
+	currentOp.Set("idleConnections", Redactable)
+	currentOp.Set("idleCursors", Redactable)
+	currentOp.Set("idleSessions", Redactable)
+	currentOp.Set("localOps", Redactable)
+	m.Set("$currentOp", currentOp)
+	densify := orderedmap.NewOrderedMap[string, any]()
+	densify.Set("field", FieldName)
+	densify.Set("partitionByFields", Redactable)
+	rng := orderedmap.NewOrderedMap[string, any]()
+	rng.Set("step", Exempt)
+	rng.Set("units", Exempt)
+	rng.Set("bounds", Redactable)
+	densify.Set("range", rng)
+	m.Set("$densify", densify)
+	m.Set("$documents", Redactable)
+	m.Set("$facet", Pipeline)
+	fill := orderedmap.NewOrderedMap[string, any]()
+	fill.Set("partitionByFields", FieldName)
+	fill.Set("partitionBy", Redactable)
+	fill.Set("sortBy", FieldName)
+	fill.Set("output", Redactable)
+	m.Set("$fill", fill)
+	geoNear := orderedmap.NewOrderedMap[string, any]()
+	geoNear.Set("distanceField", FieldName)
+	geoNear.Set("distanceMultiplier", Redactable)
+	geoNear.Set("includeLocs", Redactable)
+	geoNear.Set("key", Redactable)
+	geoNear.Set("maxDistance", Redactable)
+	geoNear.Set("minDistance", Redactable)
+	geoNear.Set("near", Redactable)
+	geoNear.Set("query", Redactable)
+	geoNear.Set("spherical", Redactable)
+	m.Set("$geoNear", geoNear)
+	graphLookup := orderedmap.NewOrderedMap[string, any]()
+	graphLookup.Set("from", Exempt)
+	graphLookup.Set("startWith", Redactable)
+	graphLookup.Set("connectFromField", FieldName)
+	graphLookup.Set("connectToField", FieldName)
+	graphLookup.Set("as", Redactable)
+	graphLookup.Set("maxDepth", Redactable)
+	graphLookup.Set("depthField", FieldName)
+	graphLookup.Set("restrictSearchWithMatch", Redactable)
+	m.Set("$graphLookup", graphLookup)
+	m.Set("$group", Redactable)
+	m.Set("$indexStats", Redactable)
+	m.Set("$limit", Exempt)
+	listLocalSessions := orderedmap.NewOrderedMap[string, any]()
+	listLocalSessions.Set("users", Redactable)
+	listLocalSessions.Set("allUsers", Redactable)
+	m.Set("$listLocalSessions", listLocalSessions)
+	// m.Set("$listSampledQueries", orderedmap.NewOrderedMap[string, any]{"namespace": nil})
+	listSampledQueries := orderedmap.NewOrderedMap[string, any]()
+	listSampledQueries.Set("namespace", nil)
+	m.Set("$listSampledQueries", listSampledQueries)
+	listSearchIndexes := orderedmap.NewOrderedMap[string, any]()
+	listSearchIndexes.Set("id", Redactable)
+	listSearchIndexes.Set("name", Redactable)
+	m.Set("$listSearchIndexes", listSearchIndexes)
+	listSessions := orderedmap.NewOrderedMap[string, any]()
+	listSessions.Set("users", Redactable)
+	listSessions.Set("allUsers", Redactable)
+	m.Set("$listSessions", listSessions)
+	lookup := orderedmap.NewOrderedMap[string, any]()
+	lookup.Set("from", Exempt)
+	lookup.Set("localField", Redactable)
+	lookup.Set("foreignField", Redactable)
+	lookup.Set("let", Redactable)
+	lookup.Set("pipeline", Pipeline)
+	lookup.Set("as", Exempt)
+	m.Set("$lookup", lookup)
+	m.Set("$match", Redactable)
+	merge := orderedmap.NewOrderedMap[string, any]()
+	merge.Set("into", Exempt)
+	merge.Set("on", Redactable)
+	merge.Set("let", Redactable)
+	merge.Set("whenMatched", Exempt)
+	merge.Set("whenNotMatched", Exempt)
+	m.Set("$merge", merge)
+	out := orderedmap.NewOrderedMap[string, any]()
+	out.Set("db", Exempt)
+	out.Set("coll", Exempt)
+	out.Set("timeseries", Exempt)
+	m.Set("$out", out)
+	m.Set("$planCacheStats", Exempt)
+	project := orderedmap.NewOrderedMap[string, any]()
+	m.Set("$project", project)
+	m.Set("$querySettings", Exempt)
+	m.Set("$queryStats", Exempt)
+	m.Set("$redact", Redactable)
+	replaceRoot := orderedmap.NewOrderedMap[string, any]()
+	replaceRoot.Set("newRoot", FieldName)
+	m.Set("$replaceRoot", replaceRoot)
+	m.Set("$replaceWith", Redactable)
+	m.Set("$sample", Exempt)
+	m.Set("$set", Redactable)
+	setWindowFields := orderedmap.NewOrderedMap[string, any]()
+	setWindowFields.Set("partitionBy", Redactable)
+	setWindowFields.Set("sortBy", FieldName)
+	setWindowFields.Set("output", Redactable)
+	setWindowFields.Set("window", Redactable)
+	m.Set("$setWindowFields", setWindowFields)
+	m.Set("$shardedDataDistribution", Exempt)
+	m.Set("$skip", Exempt)
+	m.Set("$sort", Redactable)
+	m.Set("$sortByCount", FieldName)
+	unionWith := orderedmap.NewOrderedMap[string, any]()
+	unionWith.Set("coll", Exempt)
+	unionWith.Set("pipeline", Pipeline)
+	m.Set("$unionWith", unionWith)
+	m.Set("$unset", FieldName)
+	m.Set("$unwind", FieldName)
+	return m
+}()
 
-var CoreOperators = func() map[string]interface{} {
-	var coreOperators = map[string]interface{}{
-		"$eq":            Redactable,
-		"$gt":            Redactable,
-		"$gte":           Redactable,
-		"$in":            Redactable,
-		"$lt":            Redactable,
-		"$lte":           Redactable,
-		"$ne":            Redactable,
-		"$nin":           Redactable,
-		"$and":           OperatorArray,
-		"$not":           Redactable,
-		"$nor":           Redactable,
-		"$or":            OperatorArray,
-		"$exists":        Redactable,
-		"$type":          Redactable,
-		"$expr":          Redactable,
-		"$jsonSchema":    Redactable,
-		"$mod":           Redactable,
-		"$regex":         Redactable,
-		"$text":          Redactable,
-		"$where":         Redactable,
-		"$geoIntersects": Redactable,
-		"$geoWithin":     Redactable,
-		"$near":          Redactable,
-		"$nearSphere":    Redactable,
-		"$all":           Redactable,
-		"$elemMatch":     Redactable,
-		"$size":          Redactable,
-		"$bitsAllClear":  Redactable,
-		"$bitsAllSet":    Redactable,
-		"$bitsAnyClear":  Redactable,
-		"$bitsAnySet":    Redactable,
-		"$meta":          Redactable,
-		"$slice":         Redactable,
-		"$rand":          Redactable,
-		"$natural":       Redactable,
-		"$currentDate":   Redactable,
-		"$inc":           Redactable,
-		"$min":           Redactable,
-		"$max":           Redactable,
-		"$mul":           Redactable,
-		"$rename":        Redactable,
-		"$setOnInsert":   Redactable,
-		"$addToSet":      Redactable,
-		"$pop":           Redactable,
-		"$pull":          Redactable,
-		"$push":          Redactable,
-		"$pullAll":       Redactable,
-		"$each":          Redactable,
-		"$position":      Redactable,
-		"$bit":           Redactable,
-		"$abs":           Redactable,
-		"$add":           Redactable,
-		"$ceil":          Redactable,
-		"$divide":        Redactable,
-		"$exp":           Redactable,
-		"$floor":         Redactable,
-		"$ln":            Redactable,
-		"$log":           Redactable,
-		"$log10":         Redactable,
-		"$multiply":      Redactable,
-		"$pow":           Redactable,
-		"$round":         Redactable,
-		"$sqrt":          Redactable,
-		"$subtract":      Redactable,
-		"$trunc":         Redactable,
-		"$arrayElemAt":   Redactable,
-		"$arrayToObject": Redactable,
-		"$concatArrays":  Redactable,
-		"$filter":        Redactable,
-		"$firstN":        Redactable,
-		"$indexOfArray":  Redactable,
-		"$isArray":       Redactable,
-		"$lastN":         Redactable,
-		"$map":           Redactable,
-		"$maxN":          Redactable,
-		"$minN":          Redactable,
-		"$objectToArray": Redactable,
-		"$range":         Redactable,
-		"$reduce":        Redactable,
-		"$reverseArray":  Redactable,
-		"$sortArray":     Redactable,
-		"$zip":           Redactable,
-		"$cmp":           Redactable,
-		"$oid":           Redactable,
-		"$date":          Redactable,
-		"$cond": map[string]interface{}{
-			"if":   Redactable,
-			"then": Redactable,
-			"else": Redactable,
-		},
-		"if":   Redactable,
-		"then": Redactable,
-		"else": Redactable,
-		"$binary": map[string]interface{}{
-			"base64":  Redactable,
-			"subType": Exempt,
-		},
-	}
+var CoreOperators = func() OrderedMap {
+	var coreOperators = orderedmap.NewOrderedMap[string, any]()
+	coreOperators.Set("$eq", Redactable)
+	coreOperators.Set("$gt", Redactable)
+	coreOperators.Set("$gte", Redactable)
+	coreOperators.Set("$in", Redactable)
+	coreOperators.Set("$lt", Redactable)
+	coreOperators.Set("$lte", Redactable)
+	coreOperators.Set("$ne", Redactable)
+	coreOperators.Set("$nin", Redactable)
+	coreOperators.Set("$and", OperatorArray)
+	coreOperators.Set("$not", Redactable)
+	coreOperators.Set("$nor", Redactable)
+	coreOperators.Set("$or", OperatorArray)
+	coreOperators.Set("$exists", Redactable)
+	coreOperators.Set("$type", Redactable)
+	coreOperators.Set("$expr", Redactable)
+	coreOperators.Set("$jsonSchema", Redactable)
+	coreOperators.Set("$mod", Redactable)
+	coreOperators.Set("$regex", Redactable)
+	coreOperators.Set("$text", Redactable)
+	coreOperators.Set("$where", Redactable)
+	coreOperators.Set("$geoIntersects", Redactable)
+	coreOperators.Set("$geoWithin", Redactable)
+	coreOperators.Set("$near", Redactable)
+	coreOperators.Set("$nearSphere", Redactable)
+	coreOperators.Set("$all", Redactable)
+	coreOperators.Set("$elemMatch", Redactable)
+	coreOperators.Set("$size", Redactable)
+	coreOperators.Set("$bitsAllClear", Redactable)
+	coreOperators.Set("$bitsAllSet", Redactable)
+	coreOperators.Set("$bitsAnyClear", Redactable)
+	coreOperators.Set("$bitsAnySet", Redactable)
+	coreOperators.Set("$meta", Redactable)
+	coreOperators.Set("$slice", Redactable)
+	coreOperators.Set("$rand", Redactable)
+	coreOperators.Set("$natural", Redactable)
+	coreOperators.Set("$currentDate", Redactable)
+	coreOperators.Set("$inc", Redactable)
+	coreOperators.Set("$min", Redactable)
+	coreOperators.Set("$max", Redactable)
+	coreOperators.Set("$mul", Redactable)
+	coreOperators.Set("$rename", Redactable)
+	coreOperators.Set("$setOnInsert", Redactable)
+	coreOperators.Set("$addToSet", Redactable)
+	coreOperators.Set("$pop", Redactable)
+	coreOperators.Set("$pull", Redactable)
+	coreOperators.Set("$push", Redactable)
+	coreOperators.Set("$pullAll", Redactable)
+	coreOperators.Set("$each", Redactable)
+	coreOperators.Set("$position", Redactable)
+	coreOperators.Set("$bit", Redactable)
+	coreOperators.Set("$abs", Redactable)
+	coreOperators.Set("$add", Redactable)
+	coreOperators.Set("$ceil", Redactable)
+	coreOperators.Set("$divide", Redactable)
+	coreOperators.Set("$exp", Redactable)
+	coreOperators.Set("$floor", Redactable)
+	coreOperators.Set("$ln", Redactable)
+	coreOperators.Set("$log", Redactable)
+	coreOperators.Set("$log10", Redactable)
+	coreOperators.Set("$multiply", Redactable)
+	coreOperators.Set("$pow", Redactable)
+	coreOperators.Set("$round", Redactable)
+	coreOperators.Set("$sqrt", Redactable)
+	coreOperators.Set("$subtract", Redactable)
+	coreOperators.Set("$trunc", Redactable)
+	coreOperators.Set("$arrayElemAt", Redactable)
+	coreOperators.Set("$arrayToObject", Redactable)
+	coreOperators.Set("$concatArrays", Redactable)
+	coreOperators.Set("$filter", Redactable)
+	coreOperators.Set("$firstN", Redactable)
+	coreOperators.Set("$indexOfArray", Redactable)
+	coreOperators.Set("$isArray", Redactable)
+	coreOperators.Set("$lastN", Redactable)
+	coreOperators.Set("$map", Redactable)
+	coreOperators.Set("$maxN", Redactable)
+	coreOperators.Set("$minN", Redactable)
+	coreOperators.Set("$objectToArray", Redactable)
+	coreOperators.Set("$range", Redactable)
+	coreOperators.Set("$reduce", Redactable)
+	coreOperators.Set("$reverseArray", Redactable)
+	coreOperators.Set("$sortArray", Redactable)
+	coreOperators.Set("$zip", Redactable)
+	coreOperators.Set("$cmp", Redactable)
+	coreOperators.Set("$oid", Redactable)
+	coreOperators.Set("$date", Redactable)
+	cond := orderedmap.NewOrderedMap[string, any]()
+	cond.Set("if", Redactable)
+	cond.Set("then", Redactable)
+	cond.Set("else", Redactable)
+	coreOperators.Set("$cond", cond)
+	coreOperators.Set("if", Redactable)
+	coreOperators.Set("then", Redactable)
+	coreOperators.Set("else", Redactable)
+	binary := orderedmap.NewOrderedMap[string, any]()
+	binary.Set("base64", Redactable)
+	binary.Set("subType", Exempt)
+	coreOperators.Set("$binary", binary)
 	mergeMaps(coreOperators, AggregationOperators)
 	return coreOperators
 }()
 
-var OperatorMapDefs = map[string]interface{}{
-	"facets": map[string]interface{}{
-		"numBuckets": Exempt,
-		"type":       Exempt,
-		"path":       FieldName,
-	},
-}
+var OperatorMapDefs = func() OrderedMap {
+	var operatorMapDefs = orderedmap.NewOrderedMap[string, any]()
+	facetsMap := orderedmap.NewOrderedMap[string, any]()
+	facetsMap.Set("numBuckets", Exempt)
+	facetsMap.Set("type", Exempt)
+	facetsMap.Set("path", FieldName)
+	operatorMapDefs.Set("facets", facetsMap)
+	return operatorMapDefs
+}()
 
-var geoJSON = map[string]interface{}{
-	"type":        Exempt,
-	"coordinates": Redactable,
-}
+var geoJSON = func() OrderedMap {
+	var geoJSON = orderedmap.NewOrderedMap[string, any]()
+	geoJSON.Set("type", Exempt)
+	geoJSON.Set("coordinates", Redactable)
+	return geoJSON
+}()
 
-func mergeMaps(dst, src map[string]interface{}) {
-	for k, v := range src {
-		dst[k] = v
+func mergeMaps(dst, src OrderedMap) {
+	for el := src.Front(); el != nil; el = el.Next() {
+		dst.Set(el.Key, el.Value)
 	}
 }
 
-var SearchOperators = map[string]interface{}{
-	"autocomplete": map[string]interface{}{
-		"query":      Redactable,
-		"path":       FieldName,
-		"tokenOrder": Exempt,
-		"fuzzy":      Exempt,
-		"score":      Exempt,
-	},
-	"compound": map[string]interface{}{
-		"must":               OperatorArray,
-		"mustNot":            OperatorArray,
-		"should":             OperatorArray,
-		"filter":             Redactable,
-		"score":              Exempt,
-		"minimumShouldMatch": Exempt,
-	},
-	"embeddedDocument": map[string]interface{}{
-		"path":     FieldName,
-		"operator": Redactable,
-		"score":    Exempt,
-	},
-	"equals": map[string]interface{}{
-		"path":  FieldName,
-		"value": Redactable,
-		"score": Exempt,
-	},
-	"exists": map[string]interface{}{
-		"path":  FieldName,
-		"score": Exempt,
-	},
-	"facet": map[string]interface{}{
-		"operator": Redactable,
-		"facets":   OperatorMap,
-	},
-	"geoShape": map[string]interface{}{
-		"path":     FieldName,
-		"relation": Exempt,
-		"geometry": geoJSON,
-		"score":    Exempt,
-	},
-	"geoWithin": map[string]interface{}{
-		"path": FieldName,
-		"box": map[string]interface{}{
-			"bottomLeft": geoJSON,
-			"topRight":   geoJSON,
-		},
-		"circle": map[string]interface{}{
-			"center": geoJSON,
-			"radius": Redactable,
-		},
-		"geometry": geoJSON,
-		"score":    Exempt,
-	},
-	"in": map[string]interface{}{
-		"path":  FieldName,
-		"score": Exempt,
-		"value": Redactable,
-	},
-	"moreLikeThis": map[string]interface{}{
-		"like":  Redactable,
-		"score": Exempt,
-	},
-	"near": map[string]interface{}{
-		"path":   FieldName,
-		"origin": Redactable,
-		"pivot":  Redactable,
-		"score":  Exempt,
-	},
-	"phrase": map[string]interface{}{
-		"query":    Redactable,
-		"path":     FieldName,
-		"score":    Exempt,
-		"slop":     Exempt,
-		"synonyms": Redactable,
-	},
-	"queryString": map[string]interface{}{
-		"defaultPath": FieldName,
-		"query":       Redactable,
-	},
-	"range": map[string]interface{}{
-		"path":  FieldName,
-		"gte":   Redactable,
-		"gt":    Redactable,
-		"lte":   Redactable,
-		"lt":    Redactable,
-		"score": Exempt,
-	},
-	"regex": map[string]interface{}{
-		"query":              Redactable,
-		"path":               FieldName,
-		"allowAnalyzedField": Exempt,
-		"score":              Exempt,
-	},
-	"span": map[string]interface{}{
-		"term": map[string]interface{}{
-			"path":  FieldName,
-			"query": Redactable,
-		},
-		"contains": map[string]interface{}{
-			"spanToReturn": Exempt,
-			"little":       Redactable,
-			"big":          Redactable,
-			"score":        Exempt,
-		},
-		"first": map[string]interface{}{
-			"endPositionLte": Redactable,
-			"operator":       Redactable,
-			"score":          Exempt,
-		},
-		"near": map[string]interface{}{
-			"clauses": Redactable,
-			"slop":    Redactable,
-			"inOrder": Exempt,
-			"score":   Exempt,
-		},
-		"or": map[string]interface{}{
-			"clauses": Redactable,
-			"score":   Exempt,
-		},
-		"subtract": map[string]interface{}{
-			"include": Redactable,
-			"exclude": Redactable,
-			"score":   Exempt,
-		},
-	},
-	"text": map[string]interface{}{
-		"query":         Redactable,
-		"path":          FieldName,
-		"fuzzy":         Exempt,
-		"matchCriteria": Exempt,
-		"score":         Exempt,
-		"synonyms":      Redactable,
-	},
-	"wildcard": map[string]interface{}{
-		"query":              Redactable,
-		"path":               FieldName,
-		"allowAnalyzedField": Exempt,
-		"score":              Exempt,
-	},
-	"numBuckets": Exempt,
-}
+var SearchOperators = func() OrderedMap {
+	var SearchOperators = orderedmap.NewOrderedMap[string, any]()
+	autocomplete := orderedmap.NewOrderedMap[string, any]()
+	autocomplete.Set("query", Redactable)
+	autocomplete.Set("path", FieldName)
+	autocomplete.Set("tokenOrder", Exempt)
+	autocomplete.Set("fuzzy", Exempt)
+	autocomplete.Set("score", Exempt)
+	SearchOperators.Set("autocomplete", autocomplete)
 
-var SearchAggregationOperators = func() map[string]interface{} {
-	agg := map[string]interface{}{}
-	search := map[string]interface{}{
-		"index": Exempt,
-		"highlight": map[string]interface{}{
-			"path":              FieldName,
-			"maxCharsToExamine": Exempt,
-			"maxNumPassages":    Exempt,
-		},
-		"concurrent": Exempt,
-		"count": map[string]interface{}{
-			"type":      Exempt,
-			"threshold": Exempt,
-		},
-		"searchAfter":        Redactable,
-		"searchBefore":       Redactable,
-		"scoreDetails":       Exempt,
-		"sort":               FieldName,
-		"returnStoredSource": Exempt,
-		"tracking":           map[string]interface{}{},
-	}
-	vectorSearch := map[string]interface{}{
-		"exact":         Exempt,
-		"filter":        Redactable,
-		"index":         Exempt,
-		"limit":         Exempt,
-		"numCandidates": Exempt,
-		"path":          FieldName,
-		"queryVector":   Redactable,
-	}
+	compound := orderedmap.NewOrderedMap[string, any]()
+	compound.Set("must", OperatorArray)
+	compound.Set("mustNot", OperatorArray)
+	compound.Set("should", OperatorArray)
+	compound.Set("filter", Redactable)
+	compound.Set("score", Exempt)
+	compound.Set("minimumShouldMatch", Exempt)
+	SearchOperators.Set("compound", compound)
+
+	embeddedDocument := orderedmap.NewOrderedMap[string, any]()
+	embeddedDocument.Set("path", FieldName)
+	embeddedDocument.Set("operator", Redactable)
+	embeddedDocument.Set("score", Exempt)
+	SearchOperators.Set("embeddedDocument", embeddedDocument)
+
+	equals := orderedmap.NewOrderedMap[string, any]()
+	equals.Set("path", FieldName)
+	equals.Set("value", Redactable)
+	equals.Set("score", Exempt)
+	SearchOperators.Set("equals", equals)
+
+	exists := orderedmap.NewOrderedMap[string, any]()
+	exists.Set("path", FieldName)
+	exists.Set("score", Exempt)
+	SearchOperators.Set("exists", exists)
+	facet := orderedmap.NewOrderedMap[string, any]()
+	facet.Set("operator", Redactable)
+	facet.Set("facets", OperatorMap)
+	SearchOperators.Set("facet", facet)
+	geoShape := orderedmap.NewOrderedMap[string, any]()
+	geoShape.Set("path", FieldName)
+	geoShape.Set("relation", Exempt)
+	geoShape.Set("geometry", geoJSON)
+	geoShape.Set("score", Exempt)
+	SearchOperators.Set("geoShape", geoShape)
+	geoWithin := orderedmap.NewOrderedMap[string, any]()
+	geoWithin.Set("path", FieldName)
+	box := orderedmap.NewOrderedMap[string, any]()
+	box.Set("bottomLeft", geoJSON)
+	box.Set("topRight", geoJSON)
+	geoWithin.Set("box", box)
+	circle := orderedmap.NewOrderedMap[string, any]()
+	circle.Set("center", geoJSON)
+	circle.Set("radius", Redactable)
+	geoWithin.Set("circle", circle)
+	geoWithin.Set("geometry", geoJSON)
+	geoWithin.Set("score", Exempt)
+	SearchOperators.Set("geoWithin", geoWithin)
+	inOp := orderedmap.NewOrderedMap[string, any]()
+	inOp.Set("path", FieldName)
+	inOp.Set("score", Exempt)
+	inOp.Set("value", Redactable)
+	SearchOperators.Set("in", inOp)
+	moreLikeThis := orderedmap.NewOrderedMap[string, any]()
+	moreLikeThis.Set("like", Redactable)
+	moreLikeThis.Set("score", Exempt)
+	SearchOperators.Set("moreLikeThis", moreLikeThis)
+	near := orderedmap.NewOrderedMap[string, any]()
+	near.Set("path", FieldName)
+	near.Set("origin", Redactable)
+	near.Set("pivot", Redactable)
+	near.Set("score", Exempt)
+	SearchOperators.Set("near", near)
+	phrase := orderedmap.NewOrderedMap[string, any]()
+	phrase.Set("query", Redactable)
+	phrase.Set("path", FieldName)
+	phrase.Set("score", Exempt)
+	phrase.Set("slop", Exempt)
+	phrase.Set("synonyms", Redactable)
+	SearchOperators.Set("phrase", phrase)
+	queryString := orderedmap.NewOrderedMap[string, any]()
+	queryString.Set("defaultPath", FieldName)
+	queryString.Set("query", Redactable)
+	SearchOperators.Set("queryString", queryString)
+	rng := orderedmap.NewOrderedMap[string, any]()
+	rng.Set("path", FieldName)
+	rng.Set("gte", Redactable)
+	rng.Set("gt", Redactable)
+	rng.Set("lte", Redactable)
+	rng.Set("lt", Redactable)
+	rng.Set("score", Exempt)
+	SearchOperators.Set("range", rng)
+	regex := orderedmap.NewOrderedMap[string, any]()
+	regex.Set("query", Redactable)
+	regex.Set("path", FieldName)
+	regex.Set("allowAnalyzedField", Exempt)
+	regex.Set("score", Exempt)
+	SearchOperators.Set("regex", regex)
+	span := orderedmap.NewOrderedMap[string, any]()
+	term := orderedmap.NewOrderedMap[string, any]()
+	term.Set("path", FieldName)
+	term.Set("query", Redactable)
+	span.Set("term", term)
+	contains := orderedmap.NewOrderedMap[string, any]()
+	contains.Set("spanToReturn", Exempt)
+	contains.Set("little", Redactable)
+	contains.Set("big", Redactable)
+	contains.Set("score", Exempt)
+	span.Set("contains", contains)
+	first := orderedmap.NewOrderedMap[string, any]()
+	first.Set("endPositionLte", Redactable)
+	first.Set("operator", Redactable)
+	first.Set("score", Exempt)
+	span.Set("first", first)
+	nearClauses := orderedmap.NewOrderedMap[string, any]()
+	nearClauses.Set("clauses", Redactable)
+	nearClauses.Set("slop", Redactable)
+	nearClauses.Set("inOrder", Exempt)
+	nearClauses.Set("score", Exempt)
+	span.Set("near", nearClauses)
+	orClauses := orderedmap.NewOrderedMap[string, any]()
+	orClauses.Set("clauses", Redactable)
+	orClauses.Set("score", Exempt)
+	span.Set("or", orClauses)
+	subtract := orderedmap.NewOrderedMap[string, any]()
+	subtract.Set("include", Redactable)
+	subtract.Set("exclude", Redactable)
+	subtract.Set("score", Exempt)
+	span.Set("subtract", subtract)
+	SearchOperators.Set("span", span)
+	text := orderedmap.NewOrderedMap[string, any]()
+	text.Set("query", Redactable)
+	text.Set("path", FieldName)
+	text.Set("fuzzy", Exempt)
+	text.Set("matchCriteria", Exempt)
+	text.Set("score", Exempt)
+	text.Set("synonyms", Redactable)
+	SearchOperators.Set("text", text)
+	wildcard := orderedmap.NewOrderedMap[string, any]()
+	wildcard.Set("query", Redactable)
+	wildcard.Set("path", FieldName)
+	wildcard.Set("allowAnalyzedField", Exempt)
+	wildcard.Set("score", Exempt)
+	SearchOperators.Set("wildcard", wildcard)
+	SearchOperators.Set("numBuckets", Exempt)
+	return SearchOperators
+}()
+
+var SearchAggregationOperators = func() OrderedMap {
+	agg := orderedmap.NewOrderedMap[string, any]()
+
+	search := orderedmap.NewOrderedMap[string, any]()
+	search.Set("index", Exempt)
+
+	highlight := orderedmap.NewOrderedMap[string, any]()
+	highlight.Set("path", FieldName)
+	highlight.Set("maxCharsToExamine", Exempt)
+	highlight.Set("maxNumPassages", Exempt)
+	search.Set("highlight", highlight)
+
+	search.Set("concurrent", Exempt)
+
+	count := orderedmap.NewOrderedMap[string, any]()
+	count.Set("type", Exempt)
+	count.Set("threshold", Exempt)
+	search.Set("count", count)
+
+	search.Set("searchAfter", Redactable)
+	search.Set("searchBefore", Redactable)
+	search.Set("scoreDetails", Exempt)
+	search.Set("sort", FieldName)
+	search.Set("returnStoredSource", Exempt)
+	search.Set("tracking", orderedmap.NewOrderedMap[string, any]())
+
 	mergeMaps(search, SearchOperators)
-	agg["$search"] = search
-	agg["$searchMeta"] = search
-	agg["$vectorSearch"] = vectorSearch
+
+	vectorSearch := orderedmap.NewOrderedMap[string, any]()
+	vectorSearch.Set("exact", Exempt)
+	vectorSearch.Set("filter", Redactable)
+	vectorSearch.Set("index", Exempt)
+	vectorSearch.Set("limit", Exempt)
+	vectorSearch.Set("numCandidates", Exempt)
+	vectorSearch.Set("path", FieldName)
+	vectorSearch.Set("queryVector", Redactable)
+
+	agg.Set("$search", search)
+	agg.Set("$searchMeta", search)
+	agg.Set("$vectorSearch", vectorSearch)
+
 	return agg
 }()

@@ -1,6 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+
+	"github.com/elliotchance/orderedmap/v3"
+
 	"crypto/sha256"
 	"fmt"
 	"regexp"
@@ -85,4 +91,64 @@ func IsEmail(email string) bool {
 		return false
 	}
 	return emailRegex.MatchString(email)
+}
+func UnmarshalOrdered(data []byte) (*orderedmap.OrderedMap[string, any], error) {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	val, err := parseValue(dec)
+	if err != nil {
+		return nil, err
+	}
+	return val.(*orderedmap.OrderedMap[string, any]), nil
+}
+
+func parseValue(dec *json.Decoder) (any, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	switch tok := tok.(type) {
+	case json.Delim:
+		switch tok {
+		case '{':
+			m := orderedmap.NewOrderedMap[string, any]()
+			for dec.More() {
+				keyToken, err := dec.Token()
+				if err != nil {
+					return nil, err
+				}
+				key := keyToken.(string)
+				val, err := parseValue(dec)
+				if err != nil {
+					return nil, err
+				}
+				m.Set(key, val)
+			}
+			_, _ = dec.Token() // consume '}'
+			return m, nil
+		case '[':
+			var arr []any
+			for dec.More() {
+				val, err := parseValue(dec)
+				if err != nil {
+					return nil, err
+				}
+				arr = append(arr, val)
+			}
+			_, _ = dec.Token() // consume ']'
+			return arr, nil
+		}
+	default:
+		return tok, nil
+	}
+	return nil, io.ErrUnexpectedEOF
+}
+
+func MarshalOrdered(m *orderedmap.OrderedMap[string, any]) ([]byte, error) {
+	regularMap := make(map[string]any, m.Len())
+	for el := m.Front(); el != nil; el = el.Next() {
+		regularMap[el.Key] = el.Value
+	}
+	return json.Marshal(regularMap)
 }
