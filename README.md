@@ -87,7 +87,7 @@ Extract the downloaded archive and run the `anonymongo` binary. Depending on the
 anonymongo version
 ```
 
-### 1.3 Build from source3
+### 1.3 Build from source
 
 To build and run `anonymongo` from source, follow these steps:
 
