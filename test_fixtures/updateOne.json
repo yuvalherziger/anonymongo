@@ -1,0 +1,93 @@
+{
+  "t": {
+    "$date": "2025-04-25T07:45:28.255+00:00"
+  },
+  "s": "I",
+  "c": "WRITE",
+  "id": 51803,
+  "ctx": "conn80479",
+  "msg": "Slow query",
+  "attr": {
+    "type": "update",
+    "ns": "my_db.my_coll",
+    "command": {
+      "q": {
+        "_id": {
+          "$in": [
+            "FdKgPCtLFsRMnnSix"
+          ]
+        }
+      },
+      "u": {
+        "$set": {
+          "elapsedTime": 6600,
+          "type": "success",
+          "_lastModifiedByUserId": "system",
+          "_lastModifiedOn": "2025-04-25T07:45:27.830Z",
+          "memoryUsage": "Increased used heap memory: 112.5 MB \nIncreased total heap memory: 105.25 MB \n\nMemory usage on start: \n\nrss: 1310.31 MB \nheapTotal: 1071.92 MB \nheapUsed: 881.62 MB \nexternal: 91.44 MB \narrayBuffers: 89.12 MB \n\nCurrent memory usage: \n\nrss: 1415.12 MB \nheapTotal: 1177.17 MB \nheapUsed: 994.12 MB \nexternal: 141.72 MB \narrayBuffers: 139.42 MB \n",
+          "increasedHeapSpaceUsage": 117964296,
+          "currentHeapUsed": 1042407472
+        }
+      },
+      "multi": false,
+      "upsert": false
+    },
+    "planSummary": "IXSCAN { _id: 1 }",
+    "totalOplogSlotDurationMicros": 129,
+    "keysExamined": 1,
+    "docsExamined": 1,
+    "nMatched": 1,
+    "nModified": 1,
+    "nUpserted": 0,
+    "keysInserted": 1,
+    "keysDeleted": 1,
+    "numYields": 1,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 3
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 3
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 2
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "storage": {
+      "timeWaitingMicros": {
+        "schemaLock": 72057
+      }
+    },
+    "cpuNanos": 812129,
+    "remote": "10.3.40.116:59712",
+    "durationMillis": 72
+  }
+}

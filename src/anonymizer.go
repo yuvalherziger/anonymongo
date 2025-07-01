@@ -122,6 +122,14 @@ func redactCommand(cmd map[string]interface{}, shouldEagerRedact bool) {
 		cmd["updates"] = redactArrayValues(updates, shouldEagerRedact, false)
 	}
 
+	if update, ok := cmd["q"].(map[string]interface{}); ok {
+		cmd["q"] = redactQueryValues(update, shouldEagerRedact, false, nil)
+	}
+	
+	if update, ok := cmd["u"].(map[string]interface{}); ok {
+		cmd["u"] = redactQueryValues(update, shouldEagerRedact, false, nil)
+	}
+
 	if _, isInsert := cmd["insert"]; isInsert {
 		if docs, ok := cmd["documents"].([]interface{}); ok {
 			cmd["documents"] = redactArrayValues(docs, shouldEagerRedact, false)
