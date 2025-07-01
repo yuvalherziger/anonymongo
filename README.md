@@ -10,6 +10,15 @@
 
 Redact sensitive values from MongoDB log files before sharing them, and preserve value types and formats.
 
+Main features:
+
+* **Type-aware redaction**: Strings, numerics, booleans, ISO Dates, Object IDs, binary data.
+* **Eager redaction**: Redact field names from specified namespaces for dynamic schemas that contain sensitive values in field names.
+* **Flexible input**: Redact a file or stdin streams
+* **Flexible output**: Redact to a file or to stdout
+* **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
+* Change the default redaction placeholder string (default: `"REDACTED"`)
+
 ---
 
 <img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="900">
