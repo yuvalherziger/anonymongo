@@ -13,133 +13,10 @@ type LogEntry struct {
 	Ctx       string                 `json:"ctx"`
 	Svc       string                 `json:"svc"`
 	Msg       string                 `json:"msg"`
-	Attr      Attr                   `json:"attr"`
+	Attr      map[string]interface{} `json:"attr"`
 	Tags      []string               `json:"tags"`
 	Truncated map[string]interface{} `json:"truncated"`
 	Size      map[string]interface{} `json:"size"`
-}
-
-type Attr interface {
-	Redact()
-}
-
-type UnknownAttr struct {
-	Raw json.RawMessage `json:"-"`
-}
-
-func (a *UnknownAttr) Redact() {}
-func (a *UnknownAttr) MarshalJSON() ([]byte, error) {
-	if a.Raw == nil {
-		return []byte("{}"), nil
-	}
-	return a.Raw, nil
-}
-
-type NetworkAttr struct {
-	Remote          string      `json:"remote"`
-	UUID            interface{} `json:"uuid"`
-	ConnectionID    int         `json:"connectionId"`
-	ConnectionCount int         `json:"connectionCount"`
-}
-
-func (a *NetworkAttr) Redact() {
-	if redactIPs && a.Remote != "" {
-		a.Remote = "255.255.255.255:65535"
-	}
-}
-
-type AccessLogAuthSuccessAttr struct {
-	Client          string                 `json:"client"`
-	IsSpeculative   bool                   `json:"isSpeculative"`
-	IsClusterMember bool                   `json:"isClusterMember"`
-	Mechanism       string                 `json:"mechanism"`
-	User            string                 `json:"user"`
-	Db              string                 `json:"db"`
-	Result          int                    `json:"result"`
-	Metrics         map[string]interface{} `json:"metrics"`
-	ExtraInfo       map[string]interface{} `json:"extraInfo"`
-}
-
-func (a *AccessLogAuthSuccessAttr) Redact() {
-	if redactIPs && a.Client != "" {
-		a.Client = "255.255.255.255:65535"
-	}
-}
-
-// Reference: https://github.com/mongodb/mongo/blob/master/src/mongo/db/op_debug.cpp
-
-type SlowQueryAttr struct {
-	Type                                 string                 `json:"type"`
-	IsFromUserConnection                 bool                   `json:"isFromUserConnection"`
-	Ns                                   string                 `json:"ns"`
-	CollectionType                       interface{}            `json:"collectionType"`
-	AppName                              string                 `json:"appName"`
-	QueryShapeHash                       string                 `json:"queryShapeHash"`
-	Command                              map[string]interface{} `json:"command"`
-	OriginatingCommand                   map[string]interface{} `json:"originatingCommand"`
-	PlanSummary                          string                 `json:"planSummary"`
-	PlanningTimeMicros                   int                    `json:"planningTimeMicros"`
-	EstimatedCost                        interface{}            `json:"estimatedCost"`
-	EstimatedCardinality                 int                    `json:"estimatedCardinality"`
-	PrepareConflictDuration              int                    `json:"prepareConflictDuration"`
-	CatalogCacheDatabaseLookupDuration   int                    `json:"catalogCacheDatabaseLookupDuration"`
-	CatalogCacheCollectionLookupDuration int                    `json:"catalogCacheCollectionLookupDuration"`
-	CatalogCacheIndexLookupDuration      int                    `json:"catalogCacheIndexLookupDuration"`
-	DatabaseVersionRefreshDuration       int                    `json:"databaseVersionRefreshDuration"`
-	PlacementVersionRefreshDuration      int                    `json:"placementVersionRefreshDuration"`
-	TotalOplogSlotDuration               int                    `json:"totalOplogSlotDuration"`
-	ResolvedViews                        interface{}            `json:"resolvedViews"`
-	Mongot                               interface{}            `json:"mongot"`
-	KeysExamined                         int                    `json:"keysExamined"`
-	DocsExamined                         int                    `json:"docsExamined"`
-	HasSortStage                         bool                   `json:"hasSortStage"`
-	UsedDisk                             bool                   `json:"usedDisk"`
-	FromMultiPlanner                     bool                   `json:"fromMultiPlanner"`
-	FromPlanCache                        bool                   `json:"fromPlanCache"`
-	ReplanReason                         string                 `json:"replanReason"`
-	NMatched                             int                    `json:"nMatched"`
-	NBatches                             int                    `json:"nBatches"`
-	NModified                            int                    `json:"nModified"`
-	Ninserted                            int                    `json:"ninserted"`
-	Ndeleted                             int                    `json:"ndeleted"`
-	NUpserted                            int                    `json:"nUpserted"`
-	CursorExhausted                      bool                   `json:"cursorExhausted"`
-	KeysInserted                         int                    `json:"keysInserted"`
-	KeysDeleted                          int                    `json:"keysDeleted"`
-	DataThroughputLastSecondMBperSec     int                    `json:"dataThroughputLastSecondMBperSec"`
-	DataThroughputAverageMBPerSec        interface{}            `json:"dataThroughputAverageMBPerSec"`
-	PrepareReadConflicts                 interface{}            `json:"prepareReadConflicts"`
-	WriteConflicts                       interface{}            `json:"writeConflicts"`
-	StorageInterruptResponseNanos        interface{}            `json:"storageInterruptResponseNanos"`
-	TemporarilyUnavailableErrors         interface{}            `json:"temporarilyUnavailableErrors"`
-	NumYields                            int                    `json:"numYields"`
-	NReturned                            int                    `json:"nreturned"`
-	InUseMemBytes                        int                    `json:"inUseMemBytes"`
-	MaxUsedMemBytes                      int                    `json:"maxUsedMemBytes"`
-	PlanCacheShapeHash                   interface{}            `json:"planCacheShapeHash"`
-	QueryHash                            string                 `json:"queryHash"`
-	QueryFramework                       string                 `json:"queryFramework"`
-	PlanCacheKey                         string                 `json:"planCacheKey"`
-	Ok                                   int                    `json:"ok"`
-	ErrName                              string                 `json:"errName"`
-	ErrCode                              int                    `json:"errCode"`
-	Reslen                               int                    `json:"reslen"`
-	Locks                                map[string]interface{} `json:"locks"`
-	Authorization                        interface{}            `json:"authorization"`
-	LDAPOperations                       interface{}            `json:"LDAPOperations"`
-	FlowControl                          interface{}            `json:"flowControl"`
-	ReadConcern                          map[string]interface{} `json:"readConcern"`
-	WriteConcern                         map[string]interface{} `json:"writeConcern"`
-	WaitForWriteConcernDuration          int                    `json:"waitForWriteConcernDuration"`
-	Storage                              map[string]interface{} `json:"storage"`
-	CpuNanos                             int64                  `json:"cpuNanos"`
-	Remote                               string                 `json:"remote"`
-	Protocol                             string                 `json:"protocol"`
-	RemoteOpWaitMillis                   int                    `json:"remoteOpWaitMillis"`
-	Queues                               interface{}            `json:"queues"`
-	WorkingMillis                        int                    `json:"workingMillis"`
-	InterruptLatencyNanos                int                    `json:"interruptLatencyNanos"`
-	DurationMillis                       int                    `json:"durationMillis"`
 }
 
 func (l *LogEntry) UnmarshalJSON(data []byte) error {
@@ -154,23 +31,13 @@ func (l *LogEntry) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	switch {
-	case aux.C == "NETWORK":
-		var attr NetworkAttr
+	// Unmarshal attr as a generic map
+	if aux.Attr != nil {
+		var attr map[string]interface{}
 		_ = json.Unmarshal(aux.Attr, &attr)
-		l.Attr = &attr
-	case aux.C == "ACCESS" && aux.Msg == "Successfully authenticated":
-		var attr AccessLogAuthSuccessAttr
-		_ = json.Unmarshal(aux.Attr, &attr)
-		l.Attr = &attr
-	case aux.Msg == "Slow query":
-		var attr SlowQueryAttr
-		_ = json.Unmarshal(aux.Attr, &attr)
-		l.Attr = &attr
-	default:
-		var attr UnknownAttr
-		attr.Raw = aux.Attr
-		l.Attr = &attr
+		l.Attr = attr
+	} else {
+		l.Attr = nil
 	}
 	return nil
 }
@@ -195,31 +62,42 @@ func RedactMongoLog(jsonStr string) (*LogEntry, error) {
 	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
 		return nil, err
 	}
-	if entry.Attr != nil {
-		entry.Attr.Redact()
-	}
-	return &entry, nil
-}
-
-func (a *SlowQueryAttr) Redact() {
 	if redactIPs {
-		a.Remote = "255.255.255.255:65535"
-	}
-
-	shouldEagerRedact := false
-	for _, path := range eagerRedactionPaths {
-		if strings.HasPrefix(a.Ns, path) {
-			shouldEagerRedact = true
-			break
+		if _, ok := entry.Attr["remote"].(string); ok {
+			entry.Attr["remote"] = "255.255.255.255:65535"
 		}
 	}
 
-	redactCommand(a.Command, shouldEagerRedact)
-	redactCommand(a.OriginatingCommand, shouldEagerRedact)
+	if entry.C == "COMMAND" || entry.Msg == "Slow query" {
+		shouldEagerRedact := false
+		for _, path := range eagerRedactionPaths {
+			s, _ := entry.Attr["ns"].(string)
 
-	if shouldEagerRedact {
-		a.PlanSummary = redactFieldNamesFromPlanSummary(a.PlanSummary)
+			if strings.HasPrefix(s, path) {
+				shouldEagerRedact = true
+				break
+			}
+		}
+		originatingCommand, ocOk := entry.Attr["originatingCommand"].(map[string]interface{})
+		if ocOk {
+			redactCommand(originatingCommand, shouldEagerRedact)
+			entry.Attr["originatingCommand"] = originatingCommand
+		}
+
+		command, ok := entry.Attr["command"].(map[string]interface{})
+		if !ok {
+			return &entry, nil
+		}
+		redactCommand(command, shouldEagerRedact)
+		entry.Attr["command"] = command
+		if shouldEagerRedact {
+			planSummary, psOk := entry.Attr["planSummary"].(string)
+			if psOk {
+				entry.Attr["planSummary"] = redactFieldNamesFromPlanSummary(planSummary)
+			}
+		}
 	}
+	return &entry, nil
 }
 
 func redactCommand(cmd map[string]interface{}, shouldEagerRedact bool) {
