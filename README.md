@@ -47,8 +47,16 @@ Run the following command to verify the installation:
 anonymongo version
 ```
 
-**Please note**: If you receive a prompt warning you that the developer of the software
-is not trusted, please follow the instructions in [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
+Optional, but recommended: run the following command to take `anonymongo` out of quarantine in your shell:
+
+```shell
+xattr -d com.apple.quarantine $(which anonymongo) \
+  && echo "You can now run anonymongo" \
+  || echo "anonymongo already out of quarantine"
+```
+
+**Please note**: If you didn't run the last command above, you will likely receive a prompt warning you that the developer of this software
+is not trusted. If you prefer to move it out of quarantine manually, please follow the instructions in [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
 
 ### 1.2 Release download
 
@@ -211,7 +219,19 @@ make test
 
 **Please note**: You will probably need to tell your macOS to trust
 this project. When you `anonymongo` for the first time, you'll be warned that the project
-isn't built by a known Apple developer:
+isn't built by a known Apple developer.
+
+**Option 1:**
+
+Run the following command after the Homebrew installation:
+
+```shell
+xattr -d com.apple.quarantine $(which anonymongo) \
+  && echo "You can now run anonymongo" \
+  || echo "anonymongo already out of quarantine"
+```
+
+**Option 2:**
 
 1. Run `anonymongo version` for the first time.
 2. A warning will pop up - click ***Done*** (**do not** click the "Move to trash" button):
