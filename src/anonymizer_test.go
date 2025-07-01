@@ -294,6 +294,25 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			},
 		},
 		{
+			Name:      "Simple update one statement",
+			InputFile: "updateOne.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"command.q._id.$in.0": "REDACTED",
+				"command.u.$set.foo":  float64(0),
+				"command.u.$set.bar":  "REDACTED",
+			},
+		},
+		{
+			Name:      "Simple update one statement - eager redaction",
+			InputFile: "updateOne.json",
+			Options:   setOptionsRedactedStringsWithEagerRedaction,
+			ExpectedPaths: map[string]interface{}{
+				fmt.Sprintf("command.q.%s.$in.0", HashFieldName("_id")): "REDACTED",
+				fmt.Sprintf("command.u.$set.%s", HashFieldName("bar")):  "REDACTED",
+			},
+		},
+		{
 			Name:      "Inserts redacted",
 			InputFile: "inserts.json",
 			Options:   setOptionsRedactedAll,

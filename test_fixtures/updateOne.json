@@ -1,0 +1,88 @@
+{
+  "t": {
+    "$date": "2025-04-25T07:45:28.255+00:00"
+  },
+  "s": "I",
+  "c": "WRITE",
+  "id": 51803,
+  "ctx": "conn80479",
+  "msg": "Slow query",
+  "attr": {
+    "type": "update",
+    "ns": "my_db.my_coll",
+    "command": {
+      "q": {
+        "_id": {
+          "$in": [
+            "1a27fb9b-b884-4d94-a797-962427cb94a7"
+          ]
+        }
+      },
+      "u": {
+        "$set": {
+          "foo": 6600,
+          "bar": "success"
+        }
+      },
+      "multi": false,
+      "upsert": false
+    },
+    "planSummary": "IXSCAN { _id: 1 }",
+    "totalOplogSlotDurationMicros": 129,
+    "keysExamined": 1,
+    "docsExamined": 1,
+    "nMatched": 1,
+    "nModified": 1,
+    "nUpserted": 0,
+    "keysInserted": 1,
+    "keysDeleted": 1,
+    "numYields": 1,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 3
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 3
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 2
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "storage": {
+      "timeWaitingMicros": {
+        "schemaLock": 72057
+      }
+    },
+    "cpuNanos": 812129,
+    "remote": "10.3.40.116:59712",
+    "durationMillis": 72
+  }
+}
