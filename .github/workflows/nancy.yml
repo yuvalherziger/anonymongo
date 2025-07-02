@@ -14,7 +14,7 @@ jobs:
         with:
           go-version: '1.24'
       - name: WriteGoList
-        run: go list -json -m all > go.list
+        run: go list -json -deps ./src/... > go.list
 
       - name: Nancy
         uses: sonatype-nexus-community/nancy-github-action@main
