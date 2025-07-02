@@ -12,12 +12,14 @@ Redact sensitive values from MongoDB log files before sharing them, and preserve
 
 Main features:
 
-* **Type-aware redaction**: Strings, numerics, booleans, ISO Dates, Object IDs, email addresses (new in 0.4.0), and binary data.
+* **Type-aware redaction**: Strings, numerics, booleans, ISO Dates, Object IDs, email addresses, and binary data.
+
 * **Eager redaction**: Redact field names from specified namespaces for dynamic schemas that contain sensitive values in field names.
 * **Flexible input**: Redact an input file or an stdin stream.
 * **Flexible output**: Redact to an output file or to stdout.
 * **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
 * Change the default redaction placeholder string (default: `"REDACTED"`)
+* **Read logs from Atlas Clusters**: Redact logs straight from MongoDB Atlas clusters. This feature requires an Atlas API key (see [Atlas Administration API](https://www.mongodb.com/docs/atlas/api/atlas-admin-api/)).
 
 ---
 
@@ -74,12 +76,12 @@ download the latest stable release for your OS and architecture (e.g., `anonymon
 
 Here's the full list of the latest stable (0.3.x) binaries for your convenience:
 
-- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.4.2/anonymongo_Darwin_arm64.tar.gz)
-- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.4.2/anonymongo_Darwin_x86_64.tar.gz)
-- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.4.2/anonymongo_Windows_x86_64.zip)
-- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.4.2/anonymongo_Windows_arm64.zip)
-- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.4.2/anonymongo_Linux_arm64.tar.gz)
-- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.4.2/anonymongo_Linux_x86_64.tar.gz)
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Linux_x86_64.tar.gz)
 
 Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to trust the program explicitly.
 
@@ -151,10 +153,20 @@ Available Commands:
   version     Print the version number
 
 Flags:
+  -c, --atlasClusterName string          Atlas cluster name, if reading logs from an Atlas cluster
+  -e, --atlasLogEndDate int              Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
+                                         Extract the last 7 days if not provided
+  -s, --atlasLogStartDate int            Atlas log start date in epoch seconds, if reading logs from an Atlas cluster.
+                                         Extract the last 7 days if not provided
+      --atlasPrivateKey string           Atlas API private key, if reading logs from an Atlas cluster
+                                         (Environment variable ATLAS_PRIVATE_KEY)
+  -p, --atlasProjectId string            Atlas Project ID, if reading logs from an Atlas cluster
+      --atlasPublicKey string            Atlas API public key, if reading logs from an Atlas cluster
+                                         (Environment variable ATLAS_PUBLIC_KEY)
   -h, --help                             help for anonymongo
   -o, --outputFile string                Write output to file instead of stdout
   -z, --redact-field-names stringArray   [EXPERIMENTAL] Specify namespaces whose field names should be redacted in
-                                         addition to their values. The structure is a namespace; e.g., 'dbName.collName'
+                                         addition to their values. The structure is either a namespace; e.g., 'dbName.collName'
   -b, --redactBooleans                   Redact boolean values to false
   -i, --redactIPs                        Redact network locations to 255.255.255.255:65535
   -n, --redactNumbers                    Redact numeric values to 0
@@ -169,6 +181,13 @@ Examples:
 ```shell
 # Redact and write the results to a file
 anonymongo mongod.log --outputFile mongod.redacted.log
+
+# Redact logs from an Atlas cluster
+ATLAS_PUBLIC_KEY=<API_PUBLIC_KEY> \
+ATLAS_PRIVATE_KEY=<API_PRIVATE_KEY> \
+anonymongo --atlasClusterName <CLUSTER_NAME> \
+  --atlasProjectId <ATLAS_PROJECT_ID> \
+  --outputFile ./mongod.redacted.log
 
 # Redact logs and gzipped logs straight to standard output:
 anonymongo mongod.log

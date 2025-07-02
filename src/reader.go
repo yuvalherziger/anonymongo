@@ -9,9 +9,33 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
+
+var (
+	atlasLogStartDate  = 0
+	atlasLogEndDate    = 0
+	defaultLogDuration = 60 * 60 * 24 * 7 // 7 days
+)
+
+func SetAtlasLogStartDate(startDate int) { atlasLogStartDate = startDate }
+func SetAtlasLogEndDate(endDate int)     { atlasLogEndDate = endDate }
+
+func GetStartAndEndDates() (int, int) {
+	if atlasLogStartDate == 0 && atlasLogEndDate == 0 {
+		now := int(time.Now().Unix())
+		return now - defaultLogDuration, now
+	}
+	if atlasLogStartDate == 0 {
+		atlasLogStartDate = atlasLogEndDate - defaultLogDuration
+	}
+	if atlasLogEndDate == 0 {
+		atlasLogEndDate = atlasLogStartDate + defaultLogDuration
+	}
+	return atlasLogStartDate, atlasLogEndDate
+}
 
 // FileReader defines the interface for file system operations needed by ProcessMongoLogFile.
 // This allows mocking file system access in tests.
@@ -102,3 +126,5 @@ func ProcessMongoLogFile(fileReader FileReader, filePath string, outWriter io.Wr
 func ProcessMongoLogFileFromReader(r io.Reader, outWriter io.Writer, bar *progressbar.ProgressBar) error {
 	return processMongoLogStream(r, outWriter, bar)
 }
+
+// No changes needed here for Atlas mode; all orchestration is handled in main.go
