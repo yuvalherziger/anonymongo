@@ -7,8 +7,12 @@ import (
 	"github.com/elliotchance/orderedmap/v3"
 )
 
+type ISODate struct {
+	Date string `json:"$date"`
+}
+
 type LogEntry struct {
-	T         interface{}                         `json:"t"`
+	T         ISODate                             `json:"t"`
 	S         string                              `json:"s"`
 	C         string                              `json:"c"`
 	ID        int                                 `json:"id"`
