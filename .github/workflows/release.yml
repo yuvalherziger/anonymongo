@@ -24,10 +24,10 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.9.1
 
-      - name: Write Cosign public key to disk
-        run: |
-          mkdir -p dist
-          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > dist/cosign.pub
+#      - name: Write Cosign public key to disk
+#        run: |
+#          mkdir -p dist
+#          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > dist/cosign.pub
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6

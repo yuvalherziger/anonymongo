@@ -34,7 +34,7 @@ archives:
       - goos: windows
         formats: [zip]
     files:
-      - dist/cosign.pub
+      - cosign.pub
 
 changelog:
   sort: asc
@@ -58,7 +58,7 @@ signs:
 
 release:
   extra_files:
-    - glob: dist/cosign.pub
+    - glob: cosign.pub
 
 homebrew_casks:
   -
