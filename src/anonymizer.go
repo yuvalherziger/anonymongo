@@ -8,21 +8,21 @@ import (
 )
 
 type ISODate struct {
-	Date string `json:"$date,omitempty"`
+	Date string `json:"$date"`
 }
 
 type LogEntry struct {
-	T         ISODate                             `json:"t,omitempty"`
-	S         string                              `json:"s,omitempty"`
-	C         string                              `json:"c,omitempty"`
-	ID        int                                 `json:"id,omitempty"`
-	Ctx       string                              `json:"ctx,omitempty"`
-	Svc       string                              `json:"svc,omitempty"`
-	Msg       string                              `json:"msg,omitempty"`
-	Attr      *orderedmap.OrderedMap[string, any] `json:"attr,omitempty"`
-	Tags      []string                            `json:"tags,omitempty"`
-	Truncated *orderedmap.OrderedMap[string, any] `json:"truncated,omitempty"`
-	Size      *orderedmap.OrderedMap[string, any] `json:"size,omitempty"`
+	T         ISODate                             `json:"t"`
+	S         string                              `json:"s"`
+	C         string                              `json:"c"`
+	ID        int                                 `json:"id"`
+	Ctx       string                              `json:"ctx"`
+	Svc       string                              `json:"svc"`
+	Msg       string                              `json:"msg"`
+	Attr      *orderedmap.OrderedMap[string, any] `json:"attr"`
+	Tags      []string                            `json:"tags"`
+	Truncated map[string]interface{}              `json:"truncated"`
+	Size      map[string]interface{}              `json:"size"`
 }
 
 func (l *LogEntry) UnmarshalJSON(data []byte) error {

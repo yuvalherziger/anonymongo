@@ -3,6 +3,7 @@
 
 version: 2
 
+
 before:
   hooks:
     - go mod tidy
@@ -32,6 +33,8 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+    files:
+      - dist/cosign.pub
 
 changelog:
   sort: asc
@@ -39,6 +42,22 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+signs:
+  - id: cosign
+    cmd: cosign
+    signature: "${artifact}.sig"
+    artifacts: all
+    args:
+      - "sign-blob"
+      - "--key=env://COSIGN_PRIVATE_KEY"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+
+
+release:
+  extra_files:
+    - glob: dist/cosign.pub
 
 homebrew_casks:
   -
@@ -48,7 +67,7 @@ homebrew_casks:
       name: homebrew-anonymongo
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     commit_author:
-      name: goreleaserbot
+      name: goreleasrbot
       email: bot@goreleaser.com
     description: "A CLI tool to redact sensitive values from MongoDB log files"
     homepage: "https://github.com/yuvalherziger/homebrew"
