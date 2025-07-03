@@ -3,7 +3,7 @@
 [![Tests](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml)
 [![Dependencies](https://github.com/yuvalherziger/anonymongo/actions/workflows/nancy.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/nancy.yml)
 [![Build](https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml/badge.svg)](https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml)
-[![Release](https://img.shields.io/github/v/release/yuvalherziger/anonymongo?label=release)](https://github.com/yuvalherziger/anonymongo/releases)
+[![Release](https://img.shields.io/github/v/release/yuvalherziger/anonymongo?label=Latest&color=d914d2&logo=git&logoColor=d914d2)](https://github.com/yuvalherziger/anonymongo/releases)
 [![codecov](https://codecov.io/gh/yuvalherziger/anonymongo/graph/badge.svg?token=JT2HX1Q0FX)](https://codecov.io/gh/yuvalherziger/anonymongo)
 
 ---
@@ -15,7 +15,7 @@ Main features:
 * **Type-aware redaction**: Strings, numerics, booleans, ISO Dates, Object IDs, email addresses, and binary data.
 
 * **Eager redaction**: Redact field names from specified namespaces for dynamic schemas that contain sensitive values in field names.
-* **Flexible input**: Redact an input file or an stdin stream.
+* **Flexible input**: Redact an input file, an stdin stream, or Atlas cluster logs.
 * **Flexible output**: Redact to an output file or to stdout.
 * **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
 * Change the default redaction placeholder string (default: `"REDACTED"`)
@@ -76,12 +76,12 @@ download the latest stable release for your OS and architecture (e.g., `anonymon
 
 Here's the full list of the latest stable (0.3.x) binaries for your convenience:
 
-- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Darwin_arm64.tar.gz)
-- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Darwin_x86_64.tar.gz)
-- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Windows_x86_64.zip)
-- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Windows_arm64.zip)
-- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Linux_arm64.tar.gz)
-- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.0/anonymongo_Linux_x86_64.tar.gz)
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.1/anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.1/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.1/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.1/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.1/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/0.5.1/anonymongo_Linux_x86_64.tar.gz)
 
 Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to trust the program explicitly.
 
@@ -215,23 +215,27 @@ anonymongo mongod.log --outputFile mongod.redacted.log \
 
 ## 3. Tests
 
-Every new refactoring case must be covered by a test to ensure the expected results are yielded and no
-regression is introducesd. The source code contains a specific unit test: [./src/anonymizer_test.go](./src/anonymizer_test.go).
-It's a parameterized unit test, where each test is a go struct with the following information:
+A test must cover every new refactoring case to ensure the expected results are yielded and no
+regression is introduced. The heart of this project is its anonymizer module, which is tested
+using a parameterized unit test. Take a look at [./src/anonymizer_test_params.go](./src/anonymizer_test_params.go):
+it contains an array of test cases, where each test is a Go struct with the following information:
 
 * Test name (e.g., "$expr redaction inside $lookup stage")
 * Input file: a relative path to a JSON text file input containing a single log entry
 * Options: a preset function to determine the conditions for the test (e.g., flags, overrides, etc.)
 * A mapping of JSON paths and their expected post-redaction values.
 
-Below is an example of such element you can append to the parameterized cases:
+Below is an example of such an element you can append to the parameterized cases:
 
 ```go
 {
   Name:          "$expr redaction inside $lookup stage",
-  InputFile:     "test_data/expr_in_lookup_pipeline.json",
+  InputFile:     "expr_in_lookup_pipeline.json",
   Options:       setOptionsRedactedStrings,
   ExpectedPaths: map[string]interface{}{
+    // JSON PATH                                              | EXPECTED VALUE
+    // ------------------------------------------------------------------------
+    "command.pipeline.0.$match.foo.$id":                        "000000000000000000000000",
     "command.pipeline.1.$lookup.pipeline.0.$match.$expr.$eq.1": "REDACTED",
   },
 }
