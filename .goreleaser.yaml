@@ -53,6 +53,7 @@ signs:
       - "--key=env://COSIGN_PRIVATE_KEY"
       - "--output-signature=${signature}"
       - "${artifact}"
+      - "--yes"
 
 
 release:
