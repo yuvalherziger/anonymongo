@@ -388,5 +388,3 @@ xattr -d com.apple.quarantine $(which anonymongo) \
 This software is not supported by MongoDB, Inc. under any of their commercial support subscriptions or otherwise.
 Any usage of anonymongo is at your own risk. Bug reports, feature requests, and questions can be posted in the
 [Issues section](https://github.com/yuvalherziger/anonymongo/issues) of this repository.
-
----
