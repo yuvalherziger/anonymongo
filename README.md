@@ -44,7 +44,7 @@ Main features:
             - [2.1.4 Use stdin and/or stdout](#214-use-stdin-andor-stdout)
             - [2.1.5 Reversible Encryption](#215-reversible-encryption)
             - [2.1.6 Eager Redaction](#216-eager-redaction)
-            - [2.1.7 Additional redaction Options](#217-additional-redaction-options)
+            - [2.1.7 Additional Redaction Options](#217-additional-redaction-options)
                 * [2.1.7.1 `--replacement <STRING>`](#2171-replacement-string)
                 * [2.1.7.2 `--redactBooleans` ](#2172-redactbooleans)
                 * [2.1.7.3 `--redactNumbers`](#2173-redactnumbers)
@@ -257,7 +257,7 @@ anonymongo mongod.log --outputFile mongod.redacted.log \
 
 You can also specify multiple namespaces to redact field names from.
 
-#### 2.1.7 Additional redaction Options
+#### 2.1.7 Additional Redaction Options
 
 ##### 2.1.7.1 `--replacement <STRING>`
 
