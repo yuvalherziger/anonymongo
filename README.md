@@ -88,6 +88,8 @@ To upgrade `anonymongo` to its latest version using `Homebrew`, run:
 brew upgrade --cask yuvalherziger/anonymongo/anonymongo
 ```
 
+---
+
 ### 1.2 Release download
 
 Browse to this repository's [release page](https://github.com/yuvalherziger/anonymongo/releases) and
@@ -107,6 +109,7 @@ Extract the downloaded archive and run the `anonymongo` binary. Depending on the
 ```shell
 anonymongo version
 ```
+---
 
 ### 1.3 Build from source
 
@@ -153,6 +156,8 @@ To build and run `anonymongo` from source, follow these steps:
 
 For more build options or troubleshooting, see the [Go documentation](https://golang.org/doc/).
 
+---
+
 ## 2. Usage
 
 tl;dr: `anonymongo --help`
@@ -170,6 +175,8 @@ Example below:
 anonymongo mongod.log --outputFile mongod.redacted.log
 ```
 
+---
+
 #### 2.1.2 Write to a file
 
 You can redact a MongoDB log file to a new file using the `--outputFile` flag. This flag tells anonymongo to create a
@@ -179,6 +186,8 @@ new file in the specified path and write the redacted logs to it. If the file al
 # Redact and write the results to a file
 anonymongo mongod.log --outputFile mongod.redacted.log
 ```
+
+---
 
 #### 2.1.3 Read Atlas cluster logs
 
@@ -195,6 +204,8 @@ anonymongo --atlasClusterName <CLUSTER_NAME> \
 ```
 
 Please note: you cannot redact Atlas cluster logs to stdout.
+
+---
 
 #### 2.1.4 Use stdin and/or stdout
 
@@ -219,6 +230,8 @@ You can use stdin and stdout together, which is useful for intermediate analysis
 cat mongod.log | grep "Slow query" | anonymongo | grep -m 1 "shouldnot@be.here"
 ```
 
+---
+
 #### 2.1.5 Reversible Encryption
 
 You can use the `--encrypt` flag to encrypt redacted strings in the log file. This is useful for preserving the original
@@ -235,7 +248,7 @@ The `--encryptionKey` flag is optional. If you don't provide it, a random key wi
 under the name `anonymongo.enc.key`. You can use this key to decrypt individual string values
 (see: [The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command).
 
-Limitations:
+**Limitations:**
 
 - You cannot use the `--encrypt` flag with neither stdin nor stdout.
 - The encryption key must be a 32-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
@@ -243,9 +256,11 @@ Limitations:
   directory under the name, and you can move it to a secure location for later use (e.g., a key management store).
 - The `--encrypt` command doesn't preserve formats in its ciphertext. It encrypts and encodes the original values.
 
+---
+
 #### 2.1.6 Eager Redaction
 
-This is an **experimental feature** that allows you to redact field names in specific namespaces in addition to their
+This is an **_experimental feature_** that allows you to redact field names in specific namespaces in addition to their
 values. This is useful for dynamic schemas that contain sensitive values in field names. For example, if you have a
 collection named `users` in the `app` database that potentially contains sensitive information in field names, you can
 redact the field names in that namespace using the `--redact-field-names` flag. For example:
@@ -257,6 +272,8 @@ anonymongo mongod.log --outputFile mongod.redacted.log \
 
 You can also specify multiple namespaces to redact field names from.
 
+---
+
 #### 2.1.7 Additional Redaction Options
 
 ##### 2.1.7.1 `--replacement <STRING>`
@@ -264,13 +281,19 @@ You can also specify multiple namespaces to redact field names from.
 The `--replacement` flag allows you to change the default redaction placeholder string (default: `"REDACTED"`). 
 The replacement string is ignored if using the `--encrypt` flag.
 
+---
+
 ##### 2.1.7.2 `--redactBooleans` 
 
 The `--redactBooleans` flag (default: `false`) redacts all boolean values to a constant `false` value.
 
+---
+
 ##### 2.1.7.3 `--redactNumbers`
 
 The `--redactNumbers` flag (default: `false`) redacts all boolean values to a constant `0` value.
+
+---
 
 ### 2.2 The `anonymongo decrypt` Command
 
@@ -294,6 +317,8 @@ Raw value: 6857dd3e0b8e9e87105654b1
 See demo below:
 
 <img src="./docs/images/decrypt-demo.gif" alt="anonymongo logo" width="900">
+
+---
 
 ## 3. Tests
 
@@ -329,6 +354,8 @@ Run the tests the following way:
 make test
 ```
 
+---
+
 ## 4. Adding anonymongo to trusted software on macOS
 
 **Please note**: You will probably need to tell your macOS to trust
@@ -358,6 +385,8 @@ xattr -d com.apple.quarantine $(which anonymongo) \
    ![Click "Open Anyway" in the security warning dialog](docs/images/privacy-settings.png)
 
 4. You can now run `anonymongo`.
+
+---
 
 ## 5. Disclaimer
 
