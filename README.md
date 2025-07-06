@@ -21,8 +21,7 @@ Main features:
 * **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
 * Change the default redaction placeholder string (default: `"REDACTED"`)
 * **Read logs from Atlas Clusters**: Redact logs straight from MongoDB Atlas clusters. This feature requires an Atlas API key (see [Atlas Administration API](https://www.mongodb.com/docs/atlas/api/atlas-admin-api/)).
-* **Reversible encryption**: Encrypt strings in the log file to preserve the original values while
-  still redacting them from the log file. The encrypted values can be decrypted later using the same key.
+* **Reversible encryption**: Encrypt strings in the log file to preserve the original values. The encrypted values can be decrypted later using the same key.
 
 ---
 
@@ -135,7 +134,7 @@ To build and run `anonymongo` from source, follow these steps:
     Or process a log file:
 
     ```shell
-    ./dist/anonymongo path/to/mongod.log
+    ./dist/anonymongo redact path/to/mongod.log
     ```
 
 4. **(Optional) Run tests**
@@ -164,7 +163,7 @@ The only positional parameter of the `anonymongo redact` command is the path to 
 Example below:
 
 ```shell
-anonymongo mongod.log --outputFile mongod.redacted.log
+anonymongo redact  mongod.log --outputFile mongod.redacted.log
 ```
 
 ---
@@ -176,7 +175,7 @@ new file in the specified path and write the redacted logs to it. If the file al
 
 ```shell
 # Redact and write the results to a file
-anonymongo mongod.log --outputFile mongod.redacted.log
+anonymongo redact mongod.log --outputFile mongod.redacted.log
 ```
 
 ---
@@ -190,7 +189,7 @@ You can redact logs straight from a MongoDB Atlas cluster using the `--atlasClus
 # Redact logs from an Atlas cluster
 ATLAS_PUBLIC_KEY=<API_PUBLIC_KEY> \
 ATLAS_PRIVATE_KEY=<API_PRIVATE_KEY> \
-anonymongo --atlasClusterName <CLUSTER_NAME> \
+anonymongo redact --atlasClusterName <CLUSTER_NAME> \
   --atlasProjectId <ATLAS_PROJECT_ID> \
   --outputFile ./mongod.redacted.log
 ```
@@ -207,19 +206,19 @@ creating intermediate files.
 You can read from stdin and write to a file using the `--outputFile` flag. For example:
 
 ```shell
-cat mongod.log | grep "Slow query" | anonymongo --outputFile slow_queries.redacted.log
+cat mongod.log | grep "Slow query" | anonymongo redact --outputFile slow_queries.redacted.log
 ```
 
 You can read from a file and pipe results to stdout by omitting the `--outputFile` flag. For example:
 
 ```shell
-anonymongo --outputFile slow_queries.redacted.log | tee slow_queries.redacted.log
+anonymongo redact --outputFile slow_queries.redacted.log | tee slow_queries.redacted.log
 ```
 
 You can use stdin and stdout together, which is useful for intermediate analysis. For example:
 
 ```shell
-cat mongod.log | grep "Slow query" | anonymongo | grep -m 1 "shouldnot@be.here"
+cat mongod.log | grep "Slow query" | anonymongo redact | grep -m 1 "shouldnot@be.here"
 ```
 
 ---
@@ -232,7 +231,7 @@ values while still redacting them from the log file. The encrypted values can be
 To use this feature, you need to provide a key using the `--encryptionKey` flag. The key must be a 32-byte base64-encoded string.
 
 ```shell
-anonymongo mongod.log --outputFile mongod.redacted.log --encrypt \
+anonymongo redact mongod.log --outputFile mongod.redacted.log --encrypt \
   --encryptionKey ./anonymongo.enc.key # <-- Optional, auto-generated
 ```
 
@@ -258,7 +257,7 @@ collection named `users` in the `app` database that potentially contains sensiti
 redact the field names in that namespace using the `--redact-field-names` flag. For example:
 
 ```shell
-anonymongo mongod.log --outputFile mongod.redacted.log \
+anonymongo redact mongod.log --outputFile mongod.redacted.log \
   --redact-field-names app.users
 ```
 
@@ -385,10 +384,5 @@ xattr -d com.apple.quarantine $(which anonymongo) \
 This software is not supported by MongoDB, Inc. under any of their commercial support subscriptions or otherwise.
 Any usage of anonymongo is at your own risk. Bug reports, feature requests, and questions can be posted in the
 [Issues section](https://github.com/yuvalherziger/anonymongo/issues) of this repository.
+
 ---
-
-## 5. Disclaimer
-
-This software is not supported by MongoDB, Inc. under any of their commercial support subscriptions or otherwise.
-Any usage of anonymongo is at your own risk. Bug reports, feature requests, and questions can be posted in the
-[Issues section](https://github.com/yuvalherziger/anonymongo/issues) of this repository.
