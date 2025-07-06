@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
@@ -13,21 +14,38 @@ import (
 var version = "dev" // override at build: go build -ldflags "-X main.version=1.2.3"
 
 func main() {
-	var replacement string
-	var redactNumbers bool
-	var redactBooleans bool
-	var redactIPs bool
-	var outputFile string
-	var eagerRedactionPaths []string
-	var atlasProjectId string
-	var atlasClusterName string
-	var atlasPublicKey string
-	var atlasPrivateKey string
-	var atlasLogStartDate int
-	var atlasLogEndDate int
+	// Flag for the "redact" command
+	var (
+		replacement         string
+		redactNumbers       bool
+		redactBooleans      bool
+		redactIPs           bool
+		encrypt             bool
+		outputFile          string
+		eagerRedactionPaths []string
+		atlasProjectId      string
+		atlasClusterName    string
+		atlasPublicKey      string
+		atlasPrivateKey     string
+		atlasLogStartDate   int
+		atlasLogEndDate     int
+		encryptionKeyFile   string
+	)
+	// Flag for the "decrypt" command
+	var (
+		decryptionKeyFile string
+	)
 
 	var rootCmd = &cobra.Command{
-		Use:   "anonymongo [JSON file or gzipped MongoDB log file]",
+		Use:   "anonymongo",
+		Short: "A tool for redacting and managing MongoDB log files",
+		Long: `anonymongo is a CLI tool designed to redact sensitive information from MongoDB log files,
+making them safe to share. It also provides utilities for related tasks.`,
+		// No 'Run' function, so it will show help if called without a subcommand.
+	}
+
+	var redactCmd = &cobra.Command{
+		Use:   "redact [JSON file or gzipped MongoDB log file]",
 		Short: "Redact MongoDB log files",
 		Long: `Redact MongoDB log files by replacing sensitive information with generic placeholders.
 
@@ -73,7 +91,10 @@ You can provide input either as a file (as the first argument) or by piping logs
 				fmt.Fprintln(os.Stderr, "Error: Cannot provide both a file and piped input. Please provide only one source.")
 				os.Exit(1)
 			}
-
+			if encrypt && (stdinHasData || outputFile == "") && !atlasParamsSet {
+				fmt.Fprintln(os.Stderr, "Error: --encrypt cannot be used with stdin or stdout. Please specify input and output files when using encryption.")
+				os.Exit(1)
+			}
 			if len(args) == 1 {
 				inputFile = args[0]
 			} else if stdinHasData {
@@ -102,6 +123,31 @@ You can provide input either as a file (as the first argument) or by piping logs
 				defer outWriter.Close()
 			} else {
 				outWriter = os.Stdout
+			}
+
+			if encrypt && encryptionKeyFile != "" {
+				SetShouldEncrypt(encrypt)
+				keyfileExists := FileExists(encryptionKeyFile)
+				if !keyfileExists {
+					newKey, err := GenerateKey()
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error generating encryption key: %v\n", err)
+						os.Exit(1)
+					}
+					err = WriteKeyToFile(encryptionKeyFile, newKey)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error writing encryption key to file: %v\n", err)
+						os.Exit(1)
+					}
+					SetEncryptionKey(newKey)
+				} else {
+					key, err := ReadKeyFromFile(encryptionKeyFile)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error reading encryption key file: %v\n", err)
+						os.Exit(1)
+					}
+					SetEncryptionKey(key)
+				}
 			}
 
 			// --- Atlas mode ---
@@ -228,6 +274,37 @@ You can provide input either as a file (as the first argument) or by piping logs
 		},
 	}
 
+	var decryptCmd = &cobra.Command{
+		Use:   "decrypt <value>",
+		Short: "Decrypt a value using the provided key file",
+		Long:  `Decrypt a single ciphertext string that was previously redacted by anonymongo using a specific encryption key.`,
+		Args:  cobra.ExactArgs(1), // Enforces exactly one positional argument.
+		Run: func(cmd *cobra.Command, args []string) {
+			valueToDecrypt := args[0]
+
+			fmt.Printf("Attempting to decrypt value: %q\n", valueToDecrypt)
+			fmt.Printf("Using encryption key file: %s\n", decryptionKeyFile)
+
+			key, err := ReadKeyFromFile(decryptionKeyFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading key file: %v\n", err)
+				os.Exit(1)
+			}
+			decodedBytes, err := base64.StdEncoding.DecodeString(valueToDecrypt)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error decoding base64 value: %v\n", err)
+				os.Exit(1)
+			}
+
+			decryptedValue, err := Decrypt(decodedBytes, key)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Decryption failed: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("Raw value: " + string(decryptedValue))
+		},
+	}
+
 	var versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Print the version number",
@@ -236,28 +313,37 @@ You can provide input either as a file (as the first argument) or by piping logs
 		},
 	}
 
+	// Add subcommands to the root command
+	rootCmd.AddCommand(redactCmd)
+	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	rootCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for redacted values")
-	rootCmd.Flags().BoolVarP(&redactNumbers, "redactNumbers", "n", false, "Redact numeric values to 0")
-	rootCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
-	rootCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact network locations to 255.255.255.255:65535")
-	rootCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
-	rootCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
+	// Bind flags to the "redact" subcommand
+	redactCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for redacted values")
+	redactCmd.Flags().StringVarP(&encryptionKeyFile, "encryptionKeyFile", "q", "./anonymongo.enc.key", "Path to the AES256 encryption key file (used only with --encrypt)")
+	redactCmd.Flags().BoolVarP(&redactNumbers, "redactNumbers", "n", false, "Redact numeric values to 0")
+	redactCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
+	redactCmd.Flags().BoolVarP(&encrypt, "encrypt", "y", false, "Encrypt values with deterministic encryption")
+	redactCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact network locations to 255.255.255.255:65535")
+	redactCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
+	redactCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
 addition to their values. The structure is either a namespace; e.g., 'dbName.collName'`)
-	rootCmd.Flags().StringVarP(&atlasProjectId, "atlasProjectId", "p", "", "Atlas Project ID, if reading logs from an Atlas cluster")
-	rootCmd.Flags().StringVarP(&atlasClusterName, "atlasClusterName", "c", "", "Atlas cluster name, if reading logs from an Atlas cluster")
-	rootCmd.Flags().StringVarP(&atlasPublicKey, "atlasPublicKey", "", "", `Atlas API public key, if reading logs from an Atlas cluster
+	redactCmd.Flags().StringVarP(&atlasProjectId, "atlasProjectId", "p", "", "Atlas Project ID, if reading logs from an Atlas cluster")
+	redactCmd.Flags().StringVarP(&atlasClusterName, "atlasClusterName", "c", "", "Atlas cluster name, if reading logs from an Atlas cluster")
+	redactCmd.Flags().StringVarP(&atlasPublicKey, "atlasPublicKey", "", "", `Atlas API public key, if reading logs from an Atlas cluster
 (Environment variable ATLAS_PUBLIC_KEY)`)
-	rootCmd.Flags().StringVarP(&atlasPrivateKey, "atlasPrivateKey", "", "", `Atlas API private key, if reading logs from an Atlas cluster
+	redactCmd.Flags().StringVarP(&atlasPrivateKey, "atlasPrivateKey", "", "", `Atlas API private key, if reading logs from an Atlas cluster
 (Environment variable ATLAS_PRIVATE_KEY)`)
-	rootCmd.Flags().IntVarP(&atlasLogStartDate, "atlasLogStartDate", "s", 0, `Atlas log start date in epoch seconds, if reading logs from an Atlas cluster.
+	redactCmd.Flags().IntVarP(&atlasLogStartDate, "atlasLogStartDate", "s", 0, `Atlas log start date in epoch seconds, if reading logs from an Atlas cluster.
 Extract the last 7 days if not provided`)
-	rootCmd.Flags().IntVarP(&atlasLogEndDate, "atlasLogEndDate", "e", 0, `Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
+	redactCmd.Flags().IntVarP(&atlasLogEndDate, "atlasLogEndDate", "e", 0, `Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
 Extract the last 7 days if not provided`)
 
+	// Bind flags to the "decrypt" subcommand
+	decryptCmd.Flags().StringVarP(&decryptionKeyFile, "decryptionKeyFile", "", "./anonymongo.enc.key", "Path to the AES256 encryption key file")
+
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		// Cobra already prints the error, so we don't need to double-print it.
 		os.Exit(1)
 	}
 }

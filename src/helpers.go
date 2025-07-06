@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"os"
 
 	"github.com/elliotchance/orderedmap/v3"
 
@@ -146,9 +147,65 @@ func parseValue(dec *json.Decoder) (any, error) {
 }
 
 func MarshalOrdered(m *orderedmap.OrderedMap[string, any]) ([]byte, error) {
-	regularMap := make(map[string]any, m.Len())
-	for el := m.Front(); el != nil; el = el.Next() {
-		regularMap[el.Key] = el.Value
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for el, i := m.Front(), 0; el != nil; el, i = el.Next(), i+1 {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		keyBytes, err := json.Marshal(el.Key)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(keyBytes)
+		buf.WriteByte(':')
+
+		switch v := el.Value.(type) {
+		case *orderedmap.OrderedMap[string, any]:
+			valBytes, err := MarshalOrdered(v)
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(valBytes)
+		case []any:
+			// Handle arrays of maps
+			buf.WriteByte('[')
+			for j, item := range v {
+				if j > 0 {
+					buf.WriteByte(',')
+				}
+				switch vv := item.(type) {
+				case *orderedmap.OrderedMap[string, any]:
+					valBytes, err := MarshalOrdered(vv)
+					if err != nil {
+						return nil, err
+					}
+					buf.Write(valBytes)
+				default:
+					valBytes, err := json.Marshal(vv)
+					if err != nil {
+						return nil, err
+					}
+					buf.Write(valBytes)
+				}
+			}
+			buf.WriteByte(']')
+		default:
+			valBytes, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(valBytes)
+		}
 	}
-	return json.Marshal(regularMap)
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
+}
+
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir() // Ensure it's a file, not a directory
 }
