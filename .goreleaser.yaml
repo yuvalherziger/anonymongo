@@ -60,9 +60,27 @@ release:
   extra_files:
     - glob: cosign.pub
 
-homebrew_casks:
-  -
-    name: anonymongo
+#homebrew_casks:
+#  -
+#    name: anonymongo
+#    repository:
+#      owner: yuvalherziger
+#      name: homebrew-anonymongo
+#      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+#    commit_author:
+#      name: goreleasrbot
+#      email: bot@goreleaser.com
+#    description: "A CLI tool to redact sensitive values from MongoDB log files"
+#    homepage: "https://github.com/yuvalherziger/homebrew"
+#    license: "MIT"
+#    caveats: "To test the installation, run: anonymongo version"
+
+brews:
+  - name: anonymongo
+    homepage: "https://github.com/yuvalherziger/anonymongo"
+    caveats: "To test the installation, run: anonymongo version"
+    description: "A CLI tool to redact sensitive values from MongoDB log files"
+    license: "MIT"
     repository:
       owner: yuvalherziger
       name: homebrew-anonymongo
@@ -70,7 +88,4 @@ homebrew_casks:
     commit_author:
       name: goreleasrbot
       email: bot@goreleaser.com
-    description: "A CLI tool to redact sensitive values from MongoDB log files"
-    homepage: "https://github.com/yuvalherziger/homebrew"
-    license: "MIT"
-    caveats: "To test the installation, run: anonymongo version"
+
