@@ -291,6 +291,10 @@ Using encryption key file: ./anonymongo.enc.key
 Raw value: 6857dd3e0b8e9e87105654b1
 ```
 
+See demo below:
+
+<img src="./docs/images/decrypt-demo.gif" alt="anonymongo logo" width="900">
+
 ## 3. Tests
 
 A test must cover every new refactoring case to ensure the expected results are yielded and no
