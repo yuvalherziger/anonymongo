@@ -54,6 +54,10 @@ Main features:
 
 ---
 
+<img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="900">
+
+---
+
 ## 1. Installation
 
 ### 1.1 Homebrew
