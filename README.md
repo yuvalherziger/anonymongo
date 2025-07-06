@@ -59,10 +59,11 @@ Main features:
 
 ### 1.1 Homebrew
 
-Run the following command to install anonymongo with Homebrew on your macOS:
+Run the following command to install `anonymongo` with Homebrew on your macOS:
 
 ```shell
-brew install --cask yuvalherziger/anonymongo/anonymongo
+brew tap yuvalherziger/homebrew-anonymongo
+brew install anonymongo
 ```
 
 Run the following command to verify the installation:
@@ -71,22 +72,13 @@ Run the following command to verify the installation:
 anonymongo version
 ```
 
-Optional, but recommended: run the following command to take `anonymongo` out of quarantine in your shell:
-
-```shell
-xattr -d com.apple.quarantine $(which anonymongo) \
-  && echo "You can now run anonymongo" \
-  || echo "anonymongo already out of quarantine"
-```
-
-**Please note**: If you didn't run the last command above, you will likely receive a prompt warning you that the developer of this software
-is not trusted. If you prefer to move it out of quarantine manually, please follow the instructions in [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
-
 To upgrade `anonymongo` to its latest version using `Homebrew`, run:
 
 ```shell
-brew upgrade --cask yuvalherziger/anonymongo/anonymongo
+brew update && brew upgrade anonymongo
 ```
+
+Having trouble running `anonymongo` after installing it with Homebrew? See [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
 
 ---
 
