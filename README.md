@@ -23,7 +23,7 @@ Main features:
 * **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
 * Change the default redaction placeholder string (default: `"REDACTED"`)
 * **Read logs from Atlas Clusters**: Redact logs straight from MongoDB Atlas clusters. This feature requires an Atlas API key (see [Atlas Administration API](https://www.mongodb.com/docs/atlas/api/atlas-admin-api/)).
-* **Reversible encryption**: Encrypt redacted strings in the log file to preserve the original values while
+* **Reversible encryption**: Encrypt strings in the log file to preserve the original values while
   still redacting them from the log file. The encrypted values can be decrypted later using the same key.
 
 ---
