@@ -87,7 +87,7 @@ func TestMainWithFileInputAndOutput(t *testing.T) {
 
 	// Set the command-line arguments to simulate running from the terminal.
 	// The first argument is always the program name.
-	os.Args = []string{"anonymongo", inputFilePath, "--outputFile", outputFilePath}
+	os.Args = []string{"anonymongo", "redact", inputFilePath, "--outputFile", outputFilePath}
 
 	// Redirect stdout to a no-op writer to keep test logs clean.
 	// The main program might print progress indicators, which we want to ignore.

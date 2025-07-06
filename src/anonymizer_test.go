@@ -207,7 +207,8 @@ func TestRedactMongoLog_Parameterized(t *testing.T) {
 			// var attrMap OrderedMap
 			// attrMap, _ = UnmarshalOrdered(attrBytes)
 			for path, want := range tc.ExpectedPaths {
-				got := getJSONPath(entry.Attr, path)
+				gotVal, _ := entry.Get("attr")
+				got := getJSONPath(gotVal, path)
 				if !valuesEqual(got, want) {
 					t.Errorf("expected %s to be %s, got %s", path, getTypeInfo(want), getTypeInfo(got))
 				}

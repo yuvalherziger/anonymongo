@@ -33,3 +33,6 @@ go.work.sum
 
 dist/
 anonymongo
+
+# Ignore the default keyfile
+anonymongo.enc.key

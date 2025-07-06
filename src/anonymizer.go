@@ -1,49 +1,12 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 
 	"github.com/elliotchance/orderedmap/v3"
 )
-
-type ISODate struct {
-	Date string `json:"$date"`
-}
-
-type LogEntry struct {
-	T         ISODate                             `json:"t"`
-	S         string                              `json:"s"`
-	C         string                              `json:"c"`
-	ID        int                                 `json:"id"`
-	Ctx       string                              `json:"ctx"`
-	Svc       string                              `json:"svc"`
-	Msg       string                              `json:"msg"`
-	Attr      *orderedmap.OrderedMap[string, any] `json:"attr"`
-	Tags      []string                            `json:"tags"`
-	Truncated map[string]interface{}              `json:"truncated"`
-	Size      map[string]interface{}              `json:"size"`
-}
-
-func (l *LogEntry) UnmarshalJSON(data []byte) error {
-	type Alias LogEntry
-	aux := &struct {
-		Attr json.RawMessage `json:"attr"`
-		*Alias
-	}{
-		Alias: (*Alias)(l),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return nil
-	}
-	if aux.Attr != nil {
-		attr, _ := UnmarshalOrdered(aux.Attr)
-		l.Attr = attr
-	} else {
-		l.Attr = nil
-	}
-	return nil
-}
 
 var (
 	redactedString       = "REDACTED"
@@ -52,6 +15,8 @@ var (
 	redactIPs            = false
 	eagerRedactionPaths  []string
 	RedactedFieldMapping = map[string]string{}
+	shouldEncrypt        = false
+	encryptionKey        []byte
 )
 
 func SetRedactedString(s string)            { redactedString = s }
@@ -59,59 +24,75 @@ func SetRedactNumbers(b bool)               { redactNumbers = b }
 func SetRedactBooleans(b bool)              { redactBooleans = b }
 func SetRedactIPs(b bool)                   { redactIPs = b }
 func SetEagerRedactionPaths(paths []string) { eagerRedactionPaths = paths }
+func SetEncryptionKey(key []byte)           { encryptionKey = key }
+func SetShouldEncrypt(b bool)               { shouldEncrypt = b }
 
-func RedactMongoLog(jsonStr string) (*LogEntry, error) {
-	var entry LogEntry
-	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
+func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error) {
+	// entry := orderedmap.NewOrderedMap[string, any]()
+	entry, err := UnmarshalOrdered([]byte(jsonStr))
+	if err != nil {
 		return nil, err
 	}
 	if redactIPs {
-		if remote, ok := entry.Attr.Get("remote"); ok {
-			if _, ok := remote.(string); ok {
-				entry.Attr.Set("remote", "255.255.255.255:65535")
+		if remote, ok := entry.Get("attr"); ok {
+			if attrMap, ok := remote.(*orderedmap.OrderedMap[string, any]); ok {
+				if remoteVal, ok := attrMap.Get("remote"); ok {
+					if _, ok := remoteVal.(string); ok {
+						attrMap.Set("remote", "255.255.255.255:65535")
+					}
+				}
 			}
 		}
 	}
 
-	if entry.Attr == nil {
-		return &entry, nil
+	attrVal, hasAttr := entry.Get("attr")
+	if !hasAttr || attrVal == nil {
+		return entry, nil
+	}
+	attr, ok := attrVal.(*orderedmap.OrderedMap[string, any])
+	if !ok {
+		return entry, nil
 	}
 
-	if entry.C == "COMMAND" || entry.Msg == "Slow query" {
+	cVal, _ := entry.Get("c")
+	msgVal, _ := entry.Get("msg")
+	c, _ := cVal.(string)
+	msg, _ := msgVal.(string)
+	if c == "COMMAND" || msg == "Slow query" {
 		shouldEagerRedact := false
 		for _, path := range eagerRedactionPaths {
-			s, _ := entry.Attr.Get("ns")
+			s, _ := attr.Get("ns")
 			ns, _ := s.(string)
 			if strings.HasPrefix(ns, path) {
 				shouldEagerRedact = true
 				break
 			}
 		}
-		originatingCommand, ocOk := entry.Attr.Get("originatingCommand")
+		originatingCommand, ocOk := attr.Get("originatingCommand")
 		if ocOk {
 			if ocMap, ok := originatingCommand.(*orderedmap.OrderedMap[string, any]); ok {
 				redactCommand(ocMap, shouldEagerRedact)
-				entry.Attr.Set("originatingCommand", ocMap)
+				attr.Set("originatingCommand", ocMap)
 			}
 		}
-		command, ok := entry.Attr.Get("command")
+		command, ok := attr.Get("command")
 		if !ok {
-			return &entry, nil
+			return entry, nil
 		}
 		if cmdMap, ok := command.(*orderedmap.OrderedMap[string, any]); ok {
 			redactCommand(cmdMap, shouldEagerRedact)
-			entry.Attr.Set("command", cmdMap)
+			attr.Set("command", cmdMap)
 		}
 		if shouldEagerRedact {
-			planSummary, psOk := entry.Attr.Get("planSummary")
+			planSummary, psOk := attr.Get("planSummary")
 			if psOk {
 				if psStr, ok := planSummary.(string); ok {
-					entry.Attr.Set("planSummary", redactFieldNamesFromPlanSummary(psStr))
+					attr.Set("planSummary", redactFieldNamesFromPlanSummary(psStr))
 				}
 			}
 		}
 	}
-	return &entry, nil
+	return entry, nil
 }
 
 func redactCommand(cmd *orderedmap.OrderedMap[string, any], shouldEagerRedact bool) {
@@ -490,6 +471,17 @@ func redactArrayValues(arr []any, redactFieldNames bool, isSearchStage bool) []a
 	return redactArrayValuesWithKey("", arr, redactFieldNames, isSearchStage)
 }
 
+func redactString(s string, nonEncryptedValue string) string {
+	if shouldEncrypt && encryptionKey != nil {
+		encrypted, err := Encrypt([]byte(s), encryptionKey)
+		if err != nil {
+			return s // Fallback to original if encryption fails
+		}
+		return base64.StdEncoding.EncodeToString(encrypted)
+	}
+	return nonEncryptedValue
+}
+
 func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool) interface{} {
 	key := ""
 	if len(keyPath) == 0 {
@@ -507,17 +499,17 @@ func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool) inte
 	key = keyPath[len(keyPath)-1]
 	switch key {
 	case "$date":
-		return "1970-01-01T00:00:00.000Z"
+		return redactString(v.(string), "1970-01-01T00:00:00.000Z")
 	case "$oid":
-		return "000000000000000000000000"
+		return redactString(v.(string), "000000000000000000000000")
 	}
 	switch v.(type) {
 	case string:
 		str := v.(string)
 		if IsEmail(str) {
-			return "redacted@redacted.com"
+			return redactString(v.(string), "redacted@redacted.com")
 		}
-		return redactedString
+		return redactString(v.(string), redactedString)
 	case float64, int, int64, json.Number:
 		if redactNumbers {
 			return float64(0)

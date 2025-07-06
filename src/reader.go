@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"compress/gzip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -84,7 +83,7 @@ func processMongoLogStream(r io.Reader, outWriter io.Writer, bar *progressbar.Pr
 			addOneToBar(bar)
 			continue
 		}
-		out, err := json.Marshal(redacted)
+		out, err := MarshalOrdered(redacted)
 		if err != nil {
 			addOneToBar(bar)
 			continue

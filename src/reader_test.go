@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json" // Added for generateExpectedOutput
 	"errors"
 	"io"
 	"os"            // Added for reading fixture files
@@ -73,7 +72,7 @@ func generateExpectedOutput(t *testing.T, inputLine string) string {
 	if err != nil {
 		t.Fatalf("Mock RedactMongoLog failed for input '%s': %v", inputLine, err)
 	}
-	out, err := json.Marshal(redacted)
+	out, err := MarshalOrdered(redacted)
 	if err != nil {
 		t.Fatalf("Failed to marshal redacted output for test: %v", err)
 	}
