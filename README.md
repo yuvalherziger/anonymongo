@@ -221,7 +221,8 @@ values while still redacting them from the log file. The encrypted values can be
 To use this feature, you need to provide a key using the `--encryptionKey` flag. The key must be a 32-byte base64-encoded string.
 
 ```shell
-anonymongo mongod.log --outputFile mongod.redacted.log --encrypt --encryptionKey ./anonymongo.enc.key
+anonymongo mongod.log --outputFile mongod.redacted.log --encrypt \
+  --encryptionKey ./anonymongo.enc.key # <-- Optional, auto-generated
 ```
 
 The `--encryptionKey` flag is optional. If you don't provide it, a random key will be generated in the current directory
@@ -234,6 +235,7 @@ Limitations:
 - The encryption key must be a 32-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
   It's recommended that you allow `anonymongo` to generate a random key for you. It will be stored in the current
   directory under the name, and you can move it to a secure location for later use (e.g., a key management store).
+- The `--encrypt` command doesn't preserve formats in its ciphertext. It encrypts and encodes the original values.
 
 #### 2.1.6 Eager Redaction
 
