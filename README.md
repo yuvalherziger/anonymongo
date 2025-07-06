@@ -82,6 +82,12 @@ xattr -d com.apple.quarantine $(which anonymongo) \
 **Please note**: If you didn't run the last command above, you will likely receive a prompt warning you that the developer of this software
 is not trusted. If you prefer to move it out of quarantine manually, please follow the instructions in [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos).
 
+To upgrade `anonymongo` to its latest version using `Homebrew`, run:
+
+```shell
+brew upgrade --cask yuvalherziger/anonymongo/anonymongo
+```
+
 ### 1.2 Release download
 
 Browse to this repository's [release page](https://github.com/yuvalherziger/anonymongo/releases) and
