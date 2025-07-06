@@ -8,37 +8,50 @@
 
 ---
 
+<img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="900">
+
+---
+
 Redact sensitive values from MongoDB log files before sharing them, and preserve value types and formats.
 
 Main features:
 
 * **Type-aware redaction**: Strings, numerics, booleans, ISO Dates, Object IDs, email addresses, and binary data.
-
 * **Eager redaction**: Redact field names from specified namespaces for dynamic schemas that contain sensitive values in field names.
 * **Flexible input**: Redact an input file, an stdin stream, or Atlas cluster logs.
 * **Flexible output**: Redact to an output file or to stdout.
 * **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
 * Change the default redaction placeholder string (default: `"REDACTED"`)
 * **Read logs from Atlas Clusters**: Redact logs straight from MongoDB Atlas clusters. This feature requires an Atlas API key (see [Atlas Administration API](https://www.mongodb.com/docs/atlas/api/atlas-admin-api/)).
-
----
-
-<img src="./docs/images/anonymongo-demo.gif" alt="anonymongo logo" width="900">
+* **Reversible encryption**: Encrypt redacted strings in the log file to preserve the original values while
+  still redacting them from the log file. The encrypted values can be decrypted later using the same key.
 
 ---
 
 ## Table of Contents
 
 - [anonymongo](#anonymongo)
-  - [Table of Contents](#table-of-contents)
-  - [1. Installation](#1-installation)
-    - [1.1 Homebrew](#11-homebrew)
-    - [1.2 Release download](#12-release-download)
-    - [1.3 Build from source](#13-build-from-source)
-  - [2. Usage](#2-usage)
-  - [3. Tests](#3-tests)
-  - [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos)
-  - [5. Disclaimer](#5-disclaimer)
+    * [Table of Contents](#table-of-contents)
+    * [1. Installation](#1-installation)
+        + [1.1 Homebrew](#11-homebrew)
+        + [1.2 Release download](#12-release-download)
+        + [1.3 Build from source](#13-build-from-source)
+    * [2. Usage](#2-usage)
+        + [2.1 The `anonymongo redact` Command](#21-the-anonymongo-redact-command)
+            - [2.1.1 Read from a file](#211-read-from-a-file)
+            - [2.1.2 Write to a file](#212-write-to-a-file)
+            - [2.1.3 Read Atlas cluster logs](#213-read-atlas-cluster-logs)
+            - [2.1.4 Use stdin and/or stdout](#214-use-stdin-andor-stdout)
+            - [2.1.5 Reversible Encryption](#215-reversible-encryption)
+            - [2.1.6 Eager Redaction](#216-eager-redaction)
+            - [2.1.7 Additional redaction Options](#217-additional-redaction-options)
+                * [2.1.7.1 `--replacement <STRING>`](#2171-replacement-string)
+                * [2.1.7.2 `--redactBooleans` ](#2172-redactbooleans)
+                * [2.1.7.3 `--redactNumbers`](#2173-redactnumbers)
+        + [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
+    * [3. Tests](#3-tests)
+    * [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos)
+    * [5. Disclaimer](#5-disclaimer)
 
 ---
 
@@ -138,49 +151,34 @@ For more build options or troubleshooting, see the [Go documentation](https://go
 
 tl;dr: `anonymongo --help`
 
-```
-Redact MongoDB log files by replacing sensitive information with generic placeholders.
+### 2.1 The `anonymongo redact` Command
 
-You can provide input either as a file (as the first argument) or by piping logs to stdin.
+Redact MongoDB logs.
 
-Usage:
-  anonymongo [JSON file or gzipped MongoDB log file] [flags]
-  anonymongo [command]
+#### 2.1.1 Read from a file
 
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  version     Print the version number
+The only positional parameter of the `anonymongo redact` command is the path to the MongoDB log file you want to redact.
+Example below:
 
-Flags:
-  -c, --atlasClusterName string          Atlas cluster name, if reading logs from an Atlas cluster
-  -e, --atlasLogEndDate int              Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
-                                         Extract the last 7 days if not provided
-  -s, --atlasLogStartDate int            Atlas log start date in epoch seconds, if reading logs from an Atlas cluster.
-                                         Extract the last 7 days if not provided
-      --atlasPrivateKey string           Atlas API private key, if reading logs from an Atlas cluster
-                                         (Environment variable ATLAS_PRIVATE_KEY)
-  -p, --atlasProjectId string            Atlas Project ID, if reading logs from an Atlas cluster
-      --atlasPublicKey string            Atlas API public key, if reading logs from an Atlas cluster
-                                         (Environment variable ATLAS_PUBLIC_KEY)
-  -h, --help                             help for anonymongo
-  -o, --outputFile string                Write output to file instead of stdout
-  -z, --redact-field-names stringArray   [EXPERIMENTAL] Specify namespaces whose field names should be redacted in
-                                         addition to their values. The structure is either a namespace; e.g., 'dbName.collName'
-  -b, --redactBooleans                   Redact boolean values to false
-  -i, --redactIPs                        Redact network locations to 255.255.255.255:65535
-  -n, --redactNumbers                    Redact numeric values to 0
-  -r, --replacement string               Replacement string for redacted values (default "REDACTED")
-
-Use "anonymongo [command] --help" for more information about a command.
+```shell
+anonymongo mongod.log --outputFile mongod.redacted.log
 ```
 
-Examples:
+#### 2.1.2 Write to a file
 
+You can redact a MongoDB log file to a new file using the `--outputFile` flag. This flag tells anonymongo to create a
+new file in the specified path and write the redacted logs to it. If the file already exists, it will be overwritten.
 
 ```shell
 # Redact and write the results to a file
 anonymongo mongod.log --outputFile mongod.redacted.log
+```
+
+#### 2.1.3 Read Atlas cluster logs
+
+You can redact logs straight from a MongoDB Atlas cluster using the `--atlasClusterName` and `--atlasProjectId` flags.
+
+```shell
 
 # Redact logs from an Atlas cluster
 ATLAS_PUBLIC_KEY=<API_PUBLIC_KEY> \
@@ -188,29 +186,101 @@ ATLAS_PRIVATE_KEY=<API_PRIVATE_KEY> \
 anonymongo --atlasClusterName <CLUSTER_NAME> \
   --atlasProjectId <ATLAS_PROJECT_ID> \
   --outputFile ./mongod.redacted.log
+```
 
-# Redact logs and gzipped logs straight to standard output:
-anonymongo mongod.log
+Please note: you cannot redact Atlas cluster logs to stdout.
 
-# Pipe logs with stdin:
-cat mongod.log | grep "Slow query" | anonymongo
+#### 2.1.4 Use stdin and/or stdout
 
-# Redact booleans to constant `false`
-anonymongo mongod.log --redactBooleans
+You can also pipe logs to `anonymongo` using stdin. This is useful for redacting logs from a command or a file without
+creating intermediate files.
 
-# Redact numeric values to constant `0`
-anonymongo mongod.log --redactNumbers
+You can read from stdin and write to a file using the `--outputFile` flag. For example:
 
-# Redact network locations to constant `255.255.255.255:65535`
-anonymongo mongod.log --redactIPs
+```shell
+cat mongod.log | grep "Slow query" | anonymongo --outputFile slow_queries.redacted.log
+```
 
-# Change the default redaction replacement string
-anonymongo mongod.log --replacement "some other redaction placeholder"
+You can read from a file and pipe results to stdout by omitting the `--outputFile` flag. For example:
 
-# Experimental feature: Redact field names in specific namespaces in addition to their values.
+```shell
+anonymongo --outputFile slow_queries.redacted.log | tee slow_queries.redacted.log
+```
+
+You can use stdin and stdout together, which is useful for intermediate analysis. For example:
+
+```shell
+cat mongod.log | grep "Slow query" | anonymongo | grep -m 1 "shouldnot@be.here"
+```
+
+#### 2.1.5 Reversible Encryption
+
+You can use the `--encrypt` flag to encrypt redacted strings in the log file. This is useful for preserving the original
+values while still redacting them from the log file. The encrypted values can be decrypted later using the same key.
+
+To use this feature, you need to provide a key using the `--encryptionKey` flag. The key must be a 32-byte base64-encoded string.
+
+```shell
+anonymongo mongod.log --outputFile mongod.redacted.log --encrypt --encryptionKey ./anonymongo.enc.key
+```
+
+The `--encryptionKey` flag is optional. If you don't provide it, a random key will be generated in the current directory
+under the name `anonymongo.enc.key`. You can use this key to decrypt individual string values
+(see: [The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command).
+
+Limitations:
+
+- You cannot use the `--encrypt` flag with neither stdin nor stdout.
+- The encryption key must be a 32-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
+  It's recommended that you allow `anonymongo` to generate a random key for you. It will be stored in the current
+  directory under the name, and you can move it to a secure location for later use (e.g., a key management store).
+
+#### 2.1.6 Eager Redaction
+
+This is an **experimental feature** that allows you to redact field names in specific namespaces in addition to their
+values. This is useful for dynamic schemas that contain sensitive values in field names. For example, if you have a
+collection named `users` in the `app` database that potentially contains sensitive information in field names, you can
+redact the field names in that namespace using the `--redact-field-names` flag. For example:
+
+```shell
 anonymongo mongod.log --outputFile mongod.redacted.log \
-  --redact-field-names <namespace> \
-  --redact-field-names <namespace>
+  --redact-field-names app.users
+```
+
+You can also specify multiple namespaces to redact field names from.
+
+#### 2.1.7 Additional redaction Options
+
+##### 2.1.7.1 `--replacement <STRING>`
+
+The `--replacement` flag allows you to change the default redaction placeholder string (default: `"REDACTED"`). 
+The replacement string is ignored if using the `--encrypt` flag.
+
+##### 2.1.7.2 `--redactBooleans` 
+
+The `--redactBooleans` flag (default: `false`) redacts all boolean values to a constant `false` value.
+
+##### 2.1.7.3 `--redactNumbers`
+
+The `--redactNumbers` flag (default: `false`) redacts all boolean values to a constant `0` value.
+
+### 2.2 The `anonymongo decrypt` Command
+
+If you used the `--encrypt` flag when redacting logs, you can decrypt individual string values using the
+`anonymongo decrypt` command. To decrypt a value, you need to provide the encrypted value and the same encryption key
+used to encrypt it. The command will output the decrypted value.
+
+```shell
+/anonymongo decrypt "ifMhHnXaon++grAPx//bXao0LRrQjLeVxn+2Fyv81PnnD73I2sg41g==" \
+  --decryptionKeyFile ./anonymongo.enc.key
+```
+
+Below is a sample output:
+
+```text
+Attempting to decrypt value: "ifMhHnXaon++grAPx//bXao0LRrQjLeVxn+2Fyv81PnnD73I2sg41g=="
+Using encryption key file: ./anonymongo.enc.key
+Raw value: 6857dd3e0b8e9e87105654b1
 ```
 
 ## 3. Tests

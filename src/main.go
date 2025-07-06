@@ -341,11 +341,6 @@ Extract the last 7 days if not provided`)
 
 	// Bind flags to the "decrypt" subcommand
 	decryptCmd.Flags().StringVarP(&decryptionKeyFile, "decryptionKeyFile", "", "./anonymongo.enc.key", "Path to the AES256 encryption key file")
-	if err := decryptCmd.MarkFlagRequired("decryptionKeyFile"); err != nil {
-		// This error should only happen on a programming error (e.g. flag doesn't exist)
-		fmt.Fprintf(os.Stderr, "Error marking flag required: %v\n", err)
-		os.Exit(1)
-	}
 
 	if err := rootCmd.Execute(); err != nil {
 		// Cobra already prints the error, so we don't need to double-print it.
