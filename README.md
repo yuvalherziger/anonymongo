@@ -21,6 +21,7 @@ Main features:
 * **Complete insights preservation**: The logs will be redacted of any sensitive information, but their structure will remain intact, allowing other tools to parse the logs and provide the same insights as the original logs.  
 * **Read logs from Atlas Clusters**: Redact logs straight from MongoDB Atlas clusters. This feature requires an Atlas API key (see [Atlas Administration API](https://www.mongodb.com/docs/atlas/api/atlas-admin-api/)).
 * **Reversible encryption**: Encrypt strings in the log file to preserve the original values. The encrypted values can be decrypted later using the same key.
+* **Run in a container**: You can run `anonymongo` in a Docker container if you prefer so.
 
 ---
 
@@ -43,9 +44,10 @@ Main features:
       - [2.1.7.2 `--redactBooleans`](#2172---redactbooleans)
       - [2.1.7.3 `--redactNumbers`](#2173---redactnumbers)
   - [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
-- [3. Tests](#3-tests)
-- [4. Adding anonymongo to trusted software on macOS](#4-adding-anonymongo-to-trusted-software-on-macos)
-- [5. Disclaimer](#5-disclaimer)
+- [3. Using Docker](#3-using-docker)
+- [4. Tests](#4-tests)
+- [5. Adding anonymongo to trusted software on macOS](#5-adding-anonymongo-to-trusted-software-on-macos)
+- [6. Disclaimer](#6-disclaimer)
 
 ---
 
@@ -114,7 +116,7 @@ To build and run `anonymongo` from source, follow these steps:
 
 2. Build the binary
 
-    Ensure you have [Go](https://golang.org/dl/) (version 1.18 or higher) installed.
+    Ensure you have [Go](https://golang.org/dl/) (version 1.24 or higher) installed.
 
     ```shell
     make build
@@ -311,7 +313,41 @@ See demo below:
 
 ---
 
-## 3. Tests
+## 3. Using Docker
+
+You can use `anonymongo` with Docker. The Docker image is built from the source code and contains the latest version
+of `anonymongo`.
+
+1. Pull the Docker image from GHCR (GitHub Container Registry):
+
+   ```shell
+   docker pull ghcr.io/yuvalherziger/anonymongo:latest
+   ```
+
+2. Place your MongoDB log file in a directory that you'd like to mount onto the container.
+
+   ```shell
+
+   For example, if you have a log file named `mongod.log` in the current directory, you can run the following command:
+
+   ```shell
+   cp mongod.log ./logs
+   ```
+
+3. Run the Docker container with the `anonymongo redact` command. It's important that you mount the directory containing
+   your input log file to the `/data` directory in the container. Below is an example command that redacts `./data/mongod.log`
+   from the host and writes the redacted log to `./data/mongod.redacted.log` on the host:
+
+   ```shell
+   docker run --rm \
+     -v "$(pwd)/logs:/data" \
+     anonymongo redact \
+     mongod.log --outputFile mongod.redacted.log
+   ```
+
+---
+
+## 4. Tests
 
 A test must cover every new refactoring case to ensure the expected results are yielded and no
 regression is introduced. The heart of this project is its anonymizer module, which is tested
@@ -347,7 +383,7 @@ make test
 
 ---
 
-## 4. Adding anonymongo to trusted software on macOS
+## 5. Adding anonymongo to trusted software on macOS
 
 **Please note**: You will probably need to tell your macOS to trust
 this project. When you `anonymongo` for the first time, you'll be warned that the project
@@ -379,7 +415,7 @@ xattr -d com.apple.quarantine $(which anonymongo) \
 
 ---
 
-## 5. Disclaimer
+## 6. Disclaimer
 
 This software is not supported by MongoDB, Inc. under any of their commercial support subscriptions or otherwise.
 Any usage of anonymongo is at your own risk. Bug reports, feature requests, and questions can be posted in the
