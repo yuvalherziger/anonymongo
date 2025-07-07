@@ -15,11 +15,10 @@ Redact sensitive values from MongoDB log files before sharing them, and preserve
 Main features:
 
 * **Type-aware redaction**: Strings, numerics, booleans, ISO Dates, Object IDs, email addresses, and binary data.
-* **Eager redaction**: Redact field names from specified namespaces for dynamic schemas that contain sensitive values in field names.
+* **Eager redaction**: Redact field names from specified namespaces when your field names might contain sensitive data.
 * **Flexible input**: Redact an input file, an stdin stream, or Atlas cluster logs.
 * **Flexible output**: Redact to an output file or to stdout.
-* **Complete insights preservation**: The logs will be redacted of any sensitive information, but the analysis of the log file will remain intact.
-* Change the default redaction placeholder string (default: `"REDACTED"`)
+* **Complete insights preservation**: The logs will be redacted of any sensitive information, but their structure will remain intact, allowing other tools to parse the logs and provide the same insights as the original logs.  
 * **Read logs from Atlas Clusters**: Redact logs straight from MongoDB Atlas clusters. This feature requires an Atlas API key (see [Atlas Administration API](https://www.mongodb.com/docs/atlas/api/atlas-admin-api/)).
 * **Reversible encryption**: Encrypt strings in the log file to preserve the original values. The encrypted values can be decrypted later using the same key.
 
@@ -37,9 +36,9 @@ Main features:
     - [2.1.2 Write to a file](#212-write-to-a-file)
     - [2.1.3 Read Atlas cluster logs](#213-read-atlas-cluster-logs)
     - [2.1.4 Use stdin and/or stdout](#214-use-stdin-andor-stdout)
-    - [2.1.5 Reversible Encryption](#215-reversible-encryption)
-    - [2.1.6 Eager Redaction](#216-eager-redaction)
-    - [2.1.7 Additional Redaction Options](#217-additional-redaction-options)
+    - [2.1.5 Reversible encryption](#215-reversible-encryption)
+    - [2.1.6 Eager redaction](#216-eager-redaction)
+    - [2.1.7 Additional redaction options](#217-additional-redaction-options)
       - [2.1.7.1 `--replacement <STRING>`](#2171---replacement-string)
       - [2.1.7.2 `--redactBooleans`](#2172---redactbooleans)
       - [2.1.7.3 `--redactNumbers`](#2173---redactnumbers)
@@ -223,12 +222,13 @@ cat mongod.log | grep "Slow query" | anonymongo redact | grep -m 1 "shouldnot@be
 
 ---
 
-#### 2.1.5 Reversible Encryption
+#### 2.1.5 Reversible encryption
 
 You can use the `--encrypt` flag to encrypt redacted strings in the log file. This is useful for preserving the original
 values while still redacting them from the log file. The encrypted values can be decrypted later using the same key.
 
-To use this feature, you need to provide a key using the `--encryptionKey` flag. The key must be a 32-byte base64-encoded string.
+This feature uses a base64-encoded 64-byte AES-256 SIV (Synthetic Initialization Vector). The `--encryptionKey` flag tells the command where to find the key, and
+it will generate one for you if no key is found under the provided path.
 
 ```shell
 anonymongo redact mongod.log --outputFile mongod.redacted.log --encrypt \
@@ -249,7 +249,7 @@ under the name `anonymongo.enc.key`. You can use this key to decrypt individual 
 
 ---
 
-#### 2.1.6 Eager Redaction
+#### 2.1.6 Eager redaction
 
 This is an **_experimental feature_** that allows you to redact field names in specific namespaces in addition to their
 values. This is useful for dynamic schemas that contain sensitive values in field names. For example, if you have a
@@ -265,7 +265,7 @@ You can also specify multiple namespaces to redact field names from.
 
 ---
 
-#### 2.1.7 Additional Redaction Options
+#### 2.1.7 Additional redaction options
 
 ##### 2.1.7.1 `--replacement <STRING>`
 
