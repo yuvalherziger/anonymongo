@@ -1,4 +1,4 @@
-name: Build and Push Container Image on Release
+name: Docker Build
 
 on:
   release:
