@@ -1,0 +1,12 @@
+# .dockerignore
+
+# Ignore build artifacts
+dist/
+anonymongo
+
+# Ignore git files
+.git
+.gitignore
+
+# Ignore local development files
+*.env
