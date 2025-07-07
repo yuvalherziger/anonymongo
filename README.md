@@ -227,7 +227,7 @@ cat mongod.log | grep "Slow query" | anonymongo redact | grep -m 1 "shouldnot@be
 You can use the `--encrypt` flag to encrypt redacted strings in the log file. This is useful for preserving the original
 values while still redacting them from the log file. The encrypted values can be decrypted later using the same key.
 
-This feature uses a base64-encoded 64-byte AES-256 SIV (Synthetic Initialization Vector). The `--encryptionKey` flag tells the command where to find the key, and
+This feature uses a base64-encoded 64-byte AES-256 SIV (Synthetic Initialization Vector) key. The `--encryptionKey` flag tells the command where to find the key, and
 it will generate one for you if no key is found under the provided path.
 
 ```shell
