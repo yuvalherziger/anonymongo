@@ -1,0 +1,139 @@
+{
+  "t": {
+    "$date": "2025-06-27T22:59:51.576+00:00"
+  },
+  "s": "I",
+  "c": "COMMAND",
+  "id": 51803,
+  "ctx": "conn65301",
+  "msg": "Slow query",
+  "attr": {
+    "type": "command",
+    "ns": "my_db.my_coll",
+    "command": {
+      "findAndModify": "my_coll",
+      "query": {
+        "_id": {
+          "$oid": "685f225e4b79aa83dd30d689"
+        }
+      },
+      "remove": false,
+      "new": true,
+      "upsert": false,
+      "update": {
+        "$set": {
+          "updatedAt": {
+            "$date": "2025-06-27T22:59:51.232Z"
+          },
+          "updatedBy": {
+            "$oid": "600c1969d8d0af8ebcfa6010"
+          },
+          "status": "ACTIVE"
+        },
+        "$addToSet": {
+          "tags": {
+            "$each": [
+              "tag1",
+              "tag2",
+              "tag3"
+            ]
+          }
+        }
+      },
+      "lsid": {
+        "id": {
+          "$uuid": "8892a435-43af-460a-b823-56621db1c3b7"
+        }
+      },
+      "txnNumber": 1484,
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1751065191,
+            "i": 13
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "icSvXujnGXb9wDUXWEprKwaVwW0=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7458838118326600000
+        }
+      },
+      "$db": "my_db"
+    },
+    "planSummary": "IDHACK",
+    "totalOplogSlotDurationMicros": 634,
+    "keysExamined": 1,
+    "docsExamined": 1,
+    "nMatched": 1,
+    "nModified": 1,
+    "nUpserted": 0,
+    "keysInserted": 11,
+    "keysDeleted": 11,
+    "numYields": 0,
+    "reslen": 8005,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 3
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 4
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 2
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 3
+        }
+      },
+      "Mutex": {
+        "acquireCount": {
+          "r": 3
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 1
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "writeConcern": {
+      "w": "majority",
+      "wtimeout": 0,
+      "provenance": "implicitDefault"
+    },
+    "waitForWriteConcernDurationMillis": 341,
+    "storage": {
+      "data": {
+        "bytesRead": 9760,
+        "timeReadingMicros": 12
+      }
+    },
+    "remote": "63.34.138.217:13415",
+    "protocol": "op_msg",
+    "durationMillis": 342
+  }
+}

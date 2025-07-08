@@ -17,6 +17,7 @@ var (
 	RedactedFieldMapping = map[string]string{}
 	shouldEncrypt        = false
 	encryptionKey        []byte
+	redactNamespaces     = false
 )
 
 func SetRedactedString(s string)            { redactedString = s }
@@ -26,6 +27,7 @@ func SetRedactIPs(b bool)                   { redactIPs = b }
 func SetEagerRedactionPaths(paths []string) { eagerRedactionPaths = paths }
 func SetEncryptionKey(key []byte)           { encryptionKey = key }
 func SetShouldEncrypt(b bool)               { shouldEncrypt = b }
+func SetRedactNamespaces(b bool)            { redactNamespaces = b }
 
 func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error) {
 	entry, err := UnmarshalOrdered([]byte(jsonStr))
@@ -71,6 +73,9 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 		if ocOk {
 			if ocMap, ok := originatingCommand.(*orderedmap.OrderedMap[string, any]); ok {
 				redactCommand(ocMap, shouldEagerRedact)
+				if redactNamespaces {
+					redactNamespace(ocMap)
+				}
 				attr.Set("originatingCommand", ocMap)
 			}
 		}
@@ -78,6 +83,9 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 		if cmdOk {
 			if cmdMap, ok := cmd.(*orderedmap.OrderedMap[string, any]); ok {
 				redactCommand(cmdMap, shouldEagerRedact)
+				if redactNamespaces {
+					redactNamespace(cmdMap)
+				}
 				attr.Set("cmd", cmdMap)
 			}
 		}
@@ -87,6 +95,9 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 		}
 		if cmdMap, ok := command.(*orderedmap.OrderedMap[string, any]); ok {
 			redactCommand(cmdMap, shouldEagerRedact)
+			if redactNamespaces {
+				redactNamespace(cmdMap)
+			}
 			attr.Set("command", cmdMap)
 		}
 		if shouldEagerRedact {
@@ -98,7 +109,30 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 			}
 		}
 	}
+
+	if redactNamespaces {
+		ns, ok := attr.Get("ns")
+		if ok {
+			if nsStr, ok := ns.(string); ok {
+				redactedNs := HashName(nsStr)
+				attr.Set("ns", redactedNs)
+			}
+		}
+	}
+
 	return entry, nil
+}
+
+func redactNamespace(cmd *orderedmap.OrderedMap[string, any]) {
+	searchedFields := []string{"ns", "aggregate", "insert", "find", "update", "collection", "delete", "$db", "count", "findAndModify", "findOneAndDelete", "replace", "findOneAndReplace", "findOneAndUpdate", "getIndexes", "countDocuments"}
+	for _, field := range searchedFields {
+		if value, ok := cmd.Get(field); ok {
+			if valueStr, ok := value.(string); ok {
+				redactedValue := HashName(valueStr)
+				cmd.Set(field, redactedValue)
+			}
+		}
+	}
 }
 
 func redactCommand(cmd *orderedmap.OrderedMap[string, any], shouldEagerRedact bool) {
@@ -166,7 +200,7 @@ func redactFieldNamesFromPlanSummary(planSummary string) string {
 	result := planSummary
 	fieldNames := ParsePlanSummary(planSummary)
 	for _, fieldName := range fieldNames {
-		hashed := HashFieldName(fieldName)
+		hashed := HashName(fieldName)
 		result = strings.ReplaceAll(result, fieldName, hashed)
 	}
 	return result
@@ -249,7 +283,7 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 			newKeyPath := append(keyPath, k)
 			opMeta, isOp := getOp(newKeyPath, inSearchStage)
 			if redactFieldNames && (!isOp || (isOp && opMeta == nil)) {
-				redactedKey = HashFieldName(k)
+				redactedKey = HashName(k)
 			}
 			switch meta := opMeta.(type) {
 			case OperatorType:
@@ -263,7 +297,7 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 							} else if _, isOp := getOp([]string{vTyped}, inSearchStage); isOp {
 								newMap.Set(redactedKey, vTyped)
 							} else {
-								newMap.Set(redactedKey, HashFieldName(vTyped))
+								newMap.Set(redactedKey, HashName(vTyped))
 							}
 						case *orderedmap.OrderedMap[string, any]:
 							newMap.Set(redactedKey, redactPipelineStage(vTyped, redactFieldNames, newKeyPath, inSearchStage))
@@ -271,6 +305,18 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 							newMap.Set(redactedKey, redactArrayValues(vTyped, redactFieldNames, inSearchStage))
 						default:
 							newMap.Set(redactedKey, redactScalarValue([]string{k}, v, inSearchStage))
+						}
+					} else {
+						newMap.Set(redactedKey, v)
+					}
+					continue
+				case Namespace:
+					if redactNamespaces {
+						switch vTyped := v.(type) {
+						case string:
+							newMap.Set(redactedKey, HashName(vTyped))
+						default:
+							newMap.Set(redactedKey, v)
 						}
 					} else {
 						newMap.Set(redactedKey, v)
@@ -316,7 +362,7 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 											if _, isOp := getOp([]string{subVTyped}, inSearchStage); isOp {
 												newSubMap.Set(subK, subVTyped)
 											} else {
-												newSubMap.Set(subK, HashFieldName(subVTyped))
+												newSubMap.Set(subK, HashName(subVTyped))
 											}
 										case *orderedmap.OrderedMap[string, any]:
 											newSubMap.Set(subK, redactPipelineStage(subVTyped, redactFieldNames, append(newKeyPath, subK), inSearchStage))
@@ -324,6 +370,18 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 											newSubMap.Set(subK, redactArrayValues(subVTyped, redactFieldNames, inSearchStage))
 										default:
 											newSubMap.Set(subK, redactScalarValue([]string{k}, subV, inSearchStage))
+										}
+									} else {
+										newSubMap.Set(subK, subV)
+									}
+									continue
+								case Namespace:
+									if redactNamespaces {
+										switch subVTyped := subV.(type) {
+										case string:
+											newSubMap.Set(subK, HashName(subVTyped))
+										default:
+											newSubMap.Set(subK, subV)
 										}
 									} else {
 										newSubMap.Set(subK, subV)
@@ -357,7 +415,7 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 						redactedSubK := subK
 						metaVal, metaOk := meta.Get(subK)
 						if redactFieldNames && (!subFound || (subFound && metaVal == nil && metaOk)) {
-							redactedSubK = HashFieldName(subK)
+							redactedSubK = HashName(subK)
 						}
 						switch subVTyped := subV.(type) {
 						case *orderedmap.OrderedMap[string, any]:
@@ -412,7 +470,7 @@ func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames
 		}
 		if redactFieldNames {
 			if !isOp {
-				redactedKey = HashFieldName(k)
+				redactedKey = HashName(k)
 			}
 		}
 		switch val := v.(type) {
@@ -428,7 +486,7 @@ func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames
 						isOp = true
 					}
 					if redactFieldNames && !isOp {
-						newObj.Set(redactedKey, HashFieldName(str))
+						newObj.Set(redactedKey, HashName(str))
 					} else {
 						newObj.Set(redactedKey, v)
 					}
@@ -460,7 +518,7 @@ func redactArrayValuesWithKey(parentKey string, arr []any, redactFieldNames bool
 						isOp = true
 					}
 					if redactFieldNames && !isOp {
-						arr[i] = HashFieldName(str)
+						arr[i] = HashName(str)
 					} else {
 						arr[i] = item
 					}

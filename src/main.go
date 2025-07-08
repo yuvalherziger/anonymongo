@@ -30,6 +30,7 @@ func main() {
 		atlasLogStartDate   int
 		atlasLogEndDate     int
 		encryptionKeyFile   string
+		redactNamespaces    bool
 	)
 	// Flag for the "decrypt" command
 	var (
@@ -111,6 +112,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 			SetEagerRedactionPaths(eagerRedactionPaths)
 			SetAtlasLogStartDate(atlasLogStartDate)
 			SetAtlasLogEndDate(atlasLogEndDate)
+			SetRedactNamespaces(redactNamespaces)
 
 			var outWriter *os.File
 			var err error
@@ -338,6 +340,7 @@ addition to their values. The structure is either a namespace; e.g., 'dbName.col
 Extract the last 7 days if not provided`)
 	redactCmd.Flags().IntVarP(&atlasLogEndDate, "atlasLogEndDate", "e", 0, `Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
 Extract the last 7 days if not provided`)
+	redactCmd.Flags().BoolVarP(&redactNamespaces, "redactNamespaces", "w", false, "Redact database and collection names")
 
 	// Bind flags to the "decrypt" subcommand
 	decryptCmd.Flags().StringVarP(&decryptionKeyFile, "decryptionKeyFile", "", "./anonymongo.enc.key", "Path to the AES256 encryption key file")

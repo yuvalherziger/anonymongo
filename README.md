@@ -44,6 +44,7 @@ Main features:
       - [2.1.7.1 `--replacement <STRING>`](#2171---replacement-string)
       - [2.1.7.2 `--redactBooleans`](#2172---redactbooleans)
       - [2.1.7.3 `--redactNumbers`](#2173---redactnumbers)
+      - [2.1.7.4 `--redactNamspaces`](#2174---redactnamespaces)
   - [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
 - [3. Using Docker](#3-using-docker)
 - [4. Tests](#4-tests)
@@ -90,12 +91,12 @@ download the latest stable release for your OS and architecture (e.g., `anonymon
 
 Here's the full list of the latest stable (0.3.x) binaries for your convenience:
 
-- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.0.3/anonymongo_Darwin_arm64.tar.gz)
-- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.0.3/anonymongo_Darwin_x86_64.tar.gz)
-- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.0.3/anonymongo_Windows_x86_64.zip)
-- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.0.3/anonymongo_Windows_arm64.zip)
-- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.0.3/anonymongo_Linux_arm64.tar.gz)
-- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.0.3/anonymongo_Linux_x86_64.tar.gz)
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Linux_x86_64.tar.gz)
 
 Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to trust the program explicitly.
 
@@ -286,6 +287,12 @@ The `--redactBooleans` flag (default: `false`) redacts all boolean values to a c
 ##### 2.1.7.3 `--redactNumbers`
 
 The `--redactNumbers` flag (default: `false`) redacts all boolean values to a constant `0` value.
+
+---
+
+##### 2.1.7.4 `--redactNamespaces`
+
+The `--redactNamespaces` flag (default: `false`) hashes database and collection names in the log file.
 
 ---
 

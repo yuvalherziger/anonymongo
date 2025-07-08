@@ -13,6 +13,7 @@ const (
 	FieldName     OperatorType = iota
 	OperatorArray OperatorType = iota
 	OperatorMap   OperatorType = iota
+	Namespace     OperatorType = iota
 )
 
 var AggregationOperators = func() OrderedMap {
@@ -83,7 +84,7 @@ var AggregationOperators = func() OrderedMap {
 	geoNear.Set("spherical", Redactable)
 	m.Set("$geoNear", geoNear)
 	graphLookup := orderedmap.NewOrderedMap[string, any]()
-	graphLookup.Set("from", Exempt)
+	graphLookup.Set("from", Namespace)
 	graphLookup.Set("startWith", Redactable)
 	graphLookup.Set("connectFromField", FieldName)
 	graphLookup.Set("connectToField", FieldName)
@@ -112,7 +113,7 @@ var AggregationOperators = func() OrderedMap {
 	listSessions.Set("allUsers", Redactable)
 	m.Set("$listSessions", listSessions)
 	lookup := orderedmap.NewOrderedMap[string, any]()
-	lookup.Set("from", Exempt)
+	lookup.Set("from", Namespace)
 	lookup.Set("localField", Redactable)
 	lookup.Set("foreignField", Redactable)
 	lookup.Set("let", Redactable)
@@ -121,15 +122,15 @@ var AggregationOperators = func() OrderedMap {
 	m.Set("$lookup", lookup)
 	m.Set("$match", Redactable)
 	merge := orderedmap.NewOrderedMap[string, any]()
-	merge.Set("into", Exempt)
+	merge.Set("into", Namespace)
 	merge.Set("on", Redactable)
 	merge.Set("let", Redactable)
 	merge.Set("whenMatched", Exempt)
 	merge.Set("whenNotMatched", Exempt)
 	m.Set("$merge", merge)
 	out := orderedmap.NewOrderedMap[string, any]()
-	out.Set("db", Exempt)
-	out.Set("coll", Exempt)
+	out.Set("db", Namespace)
+	out.Set("coll", Namespace)
 	out.Set("timeseries", Exempt)
 	m.Set("$out", out)
 	m.Set("$planCacheStats", Exempt)
@@ -155,7 +156,7 @@ var AggregationOperators = func() OrderedMap {
 	m.Set("$sort", Redactable)
 	m.Set("$sortByCount", FieldName)
 	unionWith := orderedmap.NewOrderedMap[string, any]()
-	unionWith.Set("coll", Exempt)
+	unionWith.Set("coll", Namespace)
 	unionWith.Set("pipeline", Pipeline)
 	m.Set("$unionWith", unionWith)
 	m.Set("$unset", FieldName)
