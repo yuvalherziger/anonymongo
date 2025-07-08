@@ -30,7 +30,6 @@ func SetShouldEncrypt(b bool)               { shouldEncrypt = b }
 func SetRedactNamespaces(b bool)            { redactNamespaces = b }
 
 func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error) {
-	// entry := orderedmap.NewOrderedMap[string, any]()
 	entry, err := UnmarshalOrdered([]byte(jsonStr))
 	if err != nil {
 		return nil, err
@@ -60,7 +59,7 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 	msgVal, _ := entry.Get("msg")
 	c, _ := cVal.(string)
 	msg, _ := msgVal.(string)
-	if c == "COMMAND" || msg == "Slow query" {
+	if c == "COMMAND" || msg == "Slow query" || c == "QUERY" {
 		shouldEagerRedact := false
 		for _, path := range eagerRedactionPaths {
 			s, _ := attr.Get("ns")
@@ -78,6 +77,13 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 					redactNamespace(ocMap)
 				}
 				attr.Set("originatingCommand", ocMap)
+			}
+		}
+		cmd, cmdOk := attr.Get("cmd")
+		if cmdOk {
+			if cmdMap, ok := cmd.(*orderedmap.OrderedMap[string, any]); ok {
+				redactCommand(cmdMap, shouldEagerRedact)
+				attr.Set("cmd", cmdMap)
 			}
 		}
 		command, ok := attr.Get("command")

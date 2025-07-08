@@ -393,6 +393,14 @@ func AnonymizerTestParams() []RedactTestCase {
 			},
 		},
 		{
+			Name:      "Error query",
+			InputFile: "error-query.json",
+			Options:   setOptionsRedactedStrings,
+			ExpectedPaths: map[string]interface{}{
+				"cmd.pipeline.0.$match.foo": "REDACTED",
+			},
+		},
+		{
 			Name:      "Simple find with namespace redaction",
 			InputFile: "simple_find.json",
 			Options:   setOptionsRedactedStringsAndNamespaces,
