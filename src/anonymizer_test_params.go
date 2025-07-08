@@ -416,7 +416,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			},
 		},
 		{
-			Name:      "Complex aggregation",
+			Name:      "Lookup aggregation with namespace redaction",
 			InputFile: "complex_aggregation.json",
 			Options:   setOptionsRedactedStringsAndNamespaces,
 			ExpectedPaths: map[string]interface{}{
@@ -428,6 +428,22 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
 				"command.pipeline.1.$lookup.from":                                  HashName("another_coll"),
 				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         "REDACTED",
+			},
+		},
+		{
+			Name:      "Find and modify with namespace redaction",
+			InputFile: "find_and_modify.json",
+			Options:   setOptionsRedactedStringsAndNamespaces,
+			ExpectedPaths: map[string]interface{}{
+				"command.$db":                           HashName("my_db"),
+				"command.findAndModify":                 HashName("my_coll"),
+				"ns":                                    HashName("my_db.my_coll"),
+				"command.update.$set.updatedAt.$date":   "1970-01-01T00:00:00.000Z",
+				"command.update.$set.updatedBy.$oid":    "000000000000000000000000",
+				"command.update.$set.status":            "REDACTED",
+				"command.update.$addToSet.tags.$each.0": "REDACTED",
+				"command.update.$addToSet.tags.$each.1": "REDACTED",
+				"command.update.$addToSet.tags.$each.2": "REDACTED",
 			},
 		},
 	}

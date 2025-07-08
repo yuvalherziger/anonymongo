@@ -115,7 +115,7 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 }
 
 func redactNamespace(cmd *orderedmap.OrderedMap[string, any]) {
-	searchedFields := []string{"ns", "aggregate", "insert", "find", "update", "collection", "delete", "$db"}
+	searchedFields := []string{"ns", "aggregate", "insert", "find", "update", "collection", "delete", "$db", "count", "findAndModify", "findOneAndDelete", "replace", "findOneAndReplace", "findOneAndUpdate", "getIndexes", "countDocuments"}
 	for _, field := range searchedFields {
 		if value, ok := cmd.Get(field); ok {
 			if valueStr, ok := value.(string); ok {
