@@ -395,9 +395,11 @@ func AnonymizerTestParams() []RedactTestCase {
 		{
 			Name:      "Error query",
 			InputFile: "error-query.json",
-			Options:   setOptionsRedactedStrings,
+			Options:   setOptionsRedactedStringsAndNamespaces,
 			ExpectedPaths: map[string]interface{}{
 				"cmd.pipeline.0.$match.foo": "REDACTED",
+				"cmd.aggregate":             HashName("mycollection"),
+				"cmd.$db":                   HashName("mydb"),
 			},
 		},
 		{

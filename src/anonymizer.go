@@ -83,6 +83,9 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 		if cmdOk {
 			if cmdMap, ok := cmd.(*orderedmap.OrderedMap[string, any]); ok {
 				redactCommand(cmdMap, shouldEagerRedact)
+				if redactNamespaces {
+					redactNamespace(cmdMap)
+				}
 				attr.Set("cmd", cmdMap)
 			}
 		}
