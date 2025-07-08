@@ -44,6 +44,7 @@ Main features:
       - [2.1.7.1 `--replacement <STRING>`](#2171---replacement-string)
       - [2.1.7.2 `--redactBooleans`](#2172---redactbooleans)
       - [2.1.7.3 `--redactNumbers`](#2173---redactnumbers)
+      - [2.1.7.4 `--redactNamspaces`](#2174---redactnamespaces)
   - [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
 - [3. Using Docker](#3-using-docker)
 - [4. Tests](#4-tests)
@@ -286,6 +287,12 @@ The `--redactBooleans` flag (default: `false`) redacts all boolean values to a c
 ##### 2.1.7.3 `--redactNumbers`
 
 The `--redactNumbers` flag (default: `false`) redacts all boolean values to a constant `0` value.
+
+---
+
+##### 2.1.7.4 `--redactNamespaces`
+
+The `--redactNamespaces` flag (default: `false`) hashes database and collection names in the log file.
 
 ---
 
