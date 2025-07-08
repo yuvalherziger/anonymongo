@@ -392,6 +392,14 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.filter.$or.3.username": "redacted@redacted.com",
 			},
 		},
+		{
+			Name:      "Error query",
+			InputFile: "error-query.json",
+			Options:   setOptionsRedactedStrings,
+			ExpectedPaths: map[string]interface{}{
+				"cmd.pipeline.0.$match.foo": "REDACTED",
+			},
+		},
 	}
 }
 

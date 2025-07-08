@@ -1,0 +1,60 @@
+{
+  "t": {
+    "$date": "2025-06-30T07:03:27.149+00:00"
+  },
+  "s": "W",
+  "c": "QUERY",
+  "id": 25000,
+  "ctx": "conn1234",
+  "msg": "Aggregate command executor error",
+  "attr": {
+    "error": {
+      "code": 50,
+      "codeName": "MaxTimeMSExpired",
+      "errmsg": "operation exceeded time limit"
+    },
+    "stats": {},
+    "cmd": {
+      "aggregate": "mycollection",
+      "pipeline": [
+        {
+          "$match": {
+            "foo": "bar"
+          }
+        },
+        {
+          "$count": "count"
+        }
+      ],
+      "hint": "_id_",
+      "cursor": {},
+      "maxTimeMS": 5000,
+      "lsid": {
+        "id": {
+          "$uuid": "a657a630-1111-0000-0000-d01de73c37e7"
+        }
+      },
+      "$clusterTime": {
+        "clusterTime": {
+          "$timestamp": {
+            "t": 1751266819,
+            "i": 2
+          }
+        },
+        "signature": {
+          "hash": {
+            "$binary": {
+              "base64": "p8fiwKSnFiVnvluU3q+yC5wG/js=",
+              "subType": "0"
+            }
+          },
+          "keyId": 7458838118326600000
+        }
+      },
+      "$readPreference": {
+        "mode": "secondary"
+      },
+      "$db": "mydb"
+    }
+  }
+}
