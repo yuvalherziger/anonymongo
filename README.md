@@ -333,9 +333,6 @@ of `anonymongo`.
    ```
 
 2. Place your MongoDB log file in a directory that you'd like to mount onto the container.
-
-   ```shell
-
    For example, if you have a log file named `mongod.log` in the current directory, you can run the following command:
 
    ```shell
