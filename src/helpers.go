@@ -55,8 +55,8 @@ func ParsePlanSummary(planSummary string) []string {
 	return fields
 }
 
-// HashFieldName returns a consistent hash for a field name.
-func HashFieldName(field string) string {
+// HashName returns a consistent hash for a field name.
+func HashName(field string) string {
 	trimmed := strings.TrimLeft(field, "$")
 	parts := strings.Split(trimmed, ".")
 	hashedParts := make([]string, len(parts))

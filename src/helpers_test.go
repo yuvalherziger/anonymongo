@@ -67,7 +67,7 @@ func TestParsePlanSummary(t *testing.T) {
 	}
 }
 
-func TestHashFieldName(t *testing.T) {
+func TestHashName(t *testing.T) {
 	originalRedactedString := redactedString
 	redactedString = "REDACTED"
 	defer func() { redactedString = originalRedactedString }()
@@ -113,14 +113,14 @@ func TestHashFieldName(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			RedactedFieldMapping = make(map[string]string)
 
-			actualHash := HashFieldName(tc.field)
+			actualHash := HashName(tc.field)
 
 			if actualHash != tc.expectedHash {
-				t.Errorf("HashFieldName() hash = %q, want %q", actualHash, tc.expectedHash)
+				t.Errorf("HashName() hash = %q, want %q", actualHash, tc.expectedHash)
 			}
 
 			if !reflect.DeepEqual(RedactedFieldMapping, tc.expectedMap) {
-				t.Errorf("HashFieldName() map = %v, want %v", RedactedFieldMapping, tc.expectedMap)
+				t.Errorf("HashName() map = %v, want %v", RedactedFieldMapping, tc.expectedMap)
 			}
 		})
 	}

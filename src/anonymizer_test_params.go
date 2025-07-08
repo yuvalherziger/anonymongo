@@ -86,8 +86,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "updateOne.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				fmt.Sprintf("command.q.%s.$in.0", HashFieldName("_id")): "REDACTED",
-				fmt.Sprintf("command.u.$set.%s", HashFieldName("bar")):  "REDACTED",
+				fmt.Sprintf("command.q.%s.$in.0", HashName("_id")): "REDACTED",
+				fmt.Sprintf("command.u.$set.%s", HashName("bar")):  "REDACTED",
 			},
 		},
 		{
@@ -181,10 +181,10 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "simple_find.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.foo": nil,
-				"command.filter.bar": nil,
-				fmt.Sprintf("command.filter.%s", HashFieldName("foo")): "REDACTED",
-				fmt.Sprintf("command.filter.%s", HashFieldName("bar")): "REDACTED",
+				"command.filter.foo":                              nil,
+				"command.filter.bar":                              nil,
+				fmt.Sprintf("command.filter.%s", HashName("foo")): "REDACTED",
+				fmt.Sprintf("command.filter.%s", HashName("bar")): "REDACTED",
 			},
 		},
 		{
@@ -192,10 +192,10 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "simple_aggregation.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$match.status":                                                nil,
-				"command.pipeline.0.$match.createdAt.$lt.$date":                                   nil,
-				fmt.Sprintf("command.pipeline.0.$match.%s", HashFieldName("status")):              "REDACTED",
-				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashFieldName("createdAt")): "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.status":                                           nil,
+				"command.pipeline.0.$match.createdAt.$lt.$date":                              nil,
+				fmt.Sprintf("command.pipeline.0.$match.%s", HashName("status")):              "REDACTED",
+				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashName("createdAt")): "1970-01-01T00:00:00.000Z",
 			},
 		},
 		{
@@ -203,14 +203,14 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "find_with_expr.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.$expr.$and.0.$eq.0":                  HashFieldName("foo"),
-				"command.filter.$expr.$and.0.$eq.1":                  "REDACTED",
-				"command.filter.$expr.$and.1.$eq.0":                  HashFieldName("bar"),
-				"command.filter.$expr.$and.1.$eq.1":                  "REDACTED",
-				"command.sort._id":                                   nil,
-				fmt.Sprintf("command.sort.%s", HashFieldName("_id")): float64(-1),
+				"command.filter.$expr.$and.0.$eq.0":             HashName("foo"),
+				"command.filter.$expr.$and.0.$eq.1":             "REDACTED",
+				"command.filter.$expr.$and.1.$eq.0":             HashName("bar"),
+				"command.filter.$expr.$and.1.$eq.1":             "REDACTED",
+				"command.sort._id":                              nil,
+				fmt.Sprintf("command.sort.%s", HashName("_id")): float64(-1),
 				// We should also hash field names in the plan summary indiscriminately:
-				"planSummary": fmt.Sprintf("IXSCAN { %s: 1, %s: 1, %s: -1 }", HashFieldName("foo"), HashFieldName("bar"), HashFieldName("_id")),
+				"planSummary": fmt.Sprintf("IXSCAN { %s: 1, %s: 1, %s: -1 }", HashName("foo"), HashName("bar"), HashName("_id")),
 			},
 		},
 		{
@@ -218,18 +218,18 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "complex_aggregation.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$match.$expr.$and.0.$ne.0":                                                       HashFieldName("status"),
-				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                                                       "REDACTED",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                                 "1970-01-01T00:00:00.000Z",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.0":                                                       HashFieldName("createdAt"),
-				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.0.$match.%s.$oid", HashFieldName("organizationId")): "000000000000000000000000",
+				"command.pipeline.0.$match.$expr.$and.0.$ne.0":                                                  HashName("status"),
+				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                                                  "REDACTED",
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                            "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.$expr.$and.1.$lt.0":                                                  HashName("createdAt"),
+				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.0.$match.%s.$oid", HashName("organizationId")): "000000000000000000000000",
 				// We have to hash field names in the pipeline stages too now:
-				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashFieldName("_id")):       float64(0),
-				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashFieldName("name")):      float64(1),
-				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashFieldName("createdAt")): float64(1),
-				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.if.$eq.1", HashFieldName("numericStatus")): "REDACTED",
-				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.then", HashFieldName("numericStatus")):     float64(-1),
-				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.else", HashFieldName("numericStatus")):     float64(1),
+				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("_id")):       float64(0),
+				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("name")):      float64(1),
+				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("createdAt")): float64(1),
+				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.if.$eq.1", HashName("numericStatus")): "REDACTED",
+				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.then", HashName("numericStatus")):     float64(-1),
+				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.else", HashName("numericStatus")):     float64(1),
 			},
 		},
 		{
@@ -256,9 +256,9 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "aggregation_stages_edge_cases.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$bucket.groupBy": HashFieldName("$year_born"),
-				"command.pipeline.1.$count":          HashFieldName("totalArtists"),
-				"command.pipeline.2.$densify.field":  HashFieldName("timestamp"),
+				"command.pipeline.0.$bucket.groupBy": HashName("$year_born"),
+				"command.pipeline.1.$count":          HashName("totalArtists"),
+				"command.pipeline.2.$densify.field":  HashName("timestamp"),
 			},
 		},
 		{
@@ -300,23 +300,23 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "search_with_compound_operators.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$search.compound.should.0.text.path":                                                              HashFieldName("type"),
+				"command.pipeline.0.$search.compound.should.0.text.path":                                                              HashName("type"),
 				"command.pipeline.0.$search.compound.should.0.text.query":                                                             "REDACTED",
-				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":                                              HashFieldName("category"),
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":                                              HashName("category"),
 				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             "REDACTED",
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.value":                                           true,
-				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.path":                                            HashFieldName("in_stock"),
+				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.path":                                            HashName("in_stock"),
 				"command.pipeline.0.$search.compound.minimumShouldMatch":                                                              float64(1),
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.path":                                  HashFieldName("items"),
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.path":                                  HashName("items"),
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   "REDACTED",
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.path":    HashFieldName("items.tags"),
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.path":    HashName("items.tags"),
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": "REDACTED",
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.path":  HashFieldName("items.name"),
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.path":  HashName("items.name"),
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.score.embedded.aggregate":              "mean",
-				"command.pipeline.0.$search.compound.should.2.exists.path":                                                            HashFieldName("quantities.lemons"),
+				"command.pipeline.0.$search.compound.should.2.exists.path":                                                            HashName("quantities.lemons"),
 				"command.pipeline.0.$search.compound.should.3.geoShape.relation":                                                      "disjoint",
 				"command.pipeline.0.$search.compound.should.3.geoShape.geometry.type":                                                 "Polygon",
-				"command.pipeline.0.$search.compound.should.3.geoShape.path":                                                          HashFieldName("address.location"),
+				"command.pipeline.0.$search.compound.should.3.geoShape.path":                                                          HashName("address.location"),
 			},
 		},
 		{
@@ -337,8 +337,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "search_meta_facets.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				fmt.Sprintf("command.pipeline.0.$searchMeta.facet.facets.%s.type", HashFieldName("yearFacet")): "number",
-				fmt.Sprintf("command.pipeline.0.$searchMeta.facet.facets.%s.path", HashFieldName("yearFacet")): "year",
+				fmt.Sprintf("command.pipeline.0.$searchMeta.facet.facets.%s.type", HashName("yearFacet")): "number",
+				fmt.Sprintf("command.pipeline.0.$searchMeta.facet.facets.%s.path", HashName("yearFacet")): "year",
 			},
 		},
 		{
@@ -372,8 +372,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "find_with_binary_data.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				fmt.Sprintf("command.filter.%s.$binary.subType", HashFieldName("uuid")): "04",
-				fmt.Sprintf("command.filter.%s.$binary.base64", HashFieldName("uuid")):  "REDACTED",
+				fmt.Sprintf("command.filter.%s.$binary.subType", HashName("uuid")): "04",
+				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  "REDACTED",
 				"planningTimeMicros": float64(43226),
 				"keysExamined":       float64(1),
 				"docsExamined":       float64(1),
@@ -392,6 +392,44 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.filter.$or.3.username": "redacted@redacted.com",
 			},
 		},
+		{
+			Name:      "Simple find with namespace redaction",
+			InputFile: "simple_find.json",
+			Options:   setOptionsRedactedStringsAndNamespaces,
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.foo": "REDACTED",
+				"command.filter.bar": "REDACTED",
+				"nreturned":          float64(1),
+				"ns":                 HashName("my_db.my_coll"),
+			},
+		},
+		{
+			Name:      "Simple aggregation with namespace redaction",
+			InputFile: "simple_aggregation.json",
+			Options:   setOptionsRedactedStringsAndNamespaces,
+			ExpectedPaths: map[string]interface{}{
+				"ns":                               HashName("my_db.my_coll"),
+				"command.$db":                      HashName("my_db"),
+				"command.aggregate":                HashName("my_coll"),
+				"command.pipeline.0.$match.status": "REDACTED",
+				"command.pipeline.0.$match.createdAt.$lt.$date": "1970-01-01T00:00:00.000Z",
+			},
+		},
+		{
+			Name:      "Complex aggregation",
+			InputFile: "complex_aggregation.json",
+			Options:   setOptionsRedactedStringsAndNamespaces,
+			ExpectedPaths: map[string]interface{}{
+				"command.$db":       HashName("my_db"),
+				"command.aggregate": HashName("my_coll"),
+				"ns":                HashName("my_db.my_coll"),
+				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     "REDACTED",
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               "1970-01-01T00:00:00.000Z",
+				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
+				"command.pipeline.1.$lookup.from":                                  HashName("another_coll"),
+				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         "REDACTED",
+			},
+		},
 	}
 }
 
@@ -401,6 +439,16 @@ func setOptionsRedactedStrings() {
 	SetRedactBooleans(false)
 	SetRedactIPs(false)
 	SetEagerRedactionPaths([]string{})
+	SetRedactNamespaces(false)
+}
+
+func setOptionsRedactedStringsAndNamespaces() {
+	SetRedactedString("REDACTED")
+	SetRedactNumbers(false)
+	SetRedactBooleans(false)
+	SetRedactIPs(false)
+	SetEagerRedactionPaths([]string{})
+	SetRedactNamespaces(true)
 }
 
 func setOptionsRedactedStringsWithEagerRedaction() {
@@ -411,6 +459,7 @@ func setOptionsRedactedStringsWithEagerRedaction() {
 	SetEagerRedactionPaths([]string{
 		"my_db.my_coll",
 	})
+	SetRedactNamespaces(false)
 }
 
 func setOptionsRedactedAllWithOverride() {
@@ -419,6 +468,7 @@ func setOptionsRedactedAllWithOverride() {
 	SetRedactBooleans(true)
 	SetRedactIPs(true)
 	SetEagerRedactionPaths([]string{})
+	SetRedactNamespaces(false)
 }
 
 func setOptionsRedactedAll() {
@@ -427,6 +477,7 @@ func setOptionsRedactedAll() {
 	SetRedactBooleans(true)
 	SetRedactIPs(true)
 	SetEagerRedactionPaths([]string{})
+	SetRedactNamespaces(false)
 }
 
 func setOptionsRedactedIPs() {
@@ -435,4 +486,5 @@ func setOptionsRedactedIPs() {
 	SetRedactBooleans(false)
 	SetRedactIPs(true)
 	SetEagerRedactionPaths([]string{})
+	SetRedactNamespaces(false)
 }
