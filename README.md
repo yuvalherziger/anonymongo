@@ -1,25 +1,15 @@
-# anonymongo
+<div align="center">
+    <img src="./docs/images/logo.png" alt="anonymongo logo" width="80">
 
----
-
-<div style="display: flex; justify-content: space-between;">
-  <div style="flex: 1; margin-right: 5px;">
-    <img src="./docs/images/logo.png" alt="anonymongo logo" width="100">
-  </div>
-  <div style="flex: 1; margin-left: 5px;">
-    <p>
-      <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml"><img src="https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
-      <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/nancy.yml"><img src="https://github.com/yuvalherziger/anonymongo/actions/workflows/nancy.yml/badge.svg" alt="Dependencies"></a>
-      <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml"><img src="https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml/badge.svg" alt="Build"></a>
-      <a href="https://github.com/yuvalherziger/anonymongo/releases"><img src="https://img.shields.io/github/v/release/yuvalherziger/anonymongo?label=Latest&color=d914d2&logo=git&logoColor=d914d2" alt="Release"></a>
-      <a href="https://codecov.io/gh/yuvalherziger/anonymongo"><img src="https://codecov.io/gh/yuvalherziger/anonymongo/graph/badge.svg?token=JT2HX1Q0FX" alt="codecov"></a>
-      <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/build-image.yml"><img src="https://img.shields.io/github/actions/workflow/status/yuvalherziger/anonymongo/build-image.yml?logo=docker&label=Docker&color=blue" alt="Docker Image"></a>
-    </p>
-  </div>
+  <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml"><img src="https://github.com/yuvalherziger/anonymongo/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/nancy.yml"><img src="https://github.com/yuvalherziger/anonymongo/actions/workflows/nancy.yml/badge.svg" alt="Dependencies"></a>
+  <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml"><img src="https://github.com/yuvalherziger/anonymongo/actions/workflows/release.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/yuvalherziger/anonymongo/releases"><img src="https://img.shields.io/github/v/release/yuvalherziger/anonymongo?label=Latest&color=d914d2&logo=git&logoColor=d914d2" alt="Release"></a>
+  <a href="https://codecov.io/gh/yuvalherziger/anonymongo"><img src="https://codecov.io/gh/yuvalherziger/anonymongo/graph/badge.svg?token=JT2HX1Q0FX" alt="codecov"></a>
+  <a href="https://github.com/yuvalherziger/anonymongo/actions/workflows/build-image.yml"><img src="https://img.shields.io/github/actions/workflow/status/yuvalherziger/anonymongo/build-image.yml?logo=docker&label=Docker&color=blue" alt="Docker Image"></a>
 </div>
 
----
-
+# anonymongo
 
 Redact sensitive values from MongoDB log files before sharing them, and preserve value types and formats.
 
