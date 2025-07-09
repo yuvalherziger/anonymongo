@@ -259,7 +259,7 @@ under the name `anonymongo.enc.key`. You can use this key to decrypt individual 
 This is an **_experimental feature_** that allows you to redact field names in specific namespaces in addition to their
 values. This is useful for dynamic schemas that contain sensitive values in field names. For example, if you have a
 collection named `users` in the `app` database that potentially contains sensitive information in field names, you can
-redact the field names in that namespace using the `--redact-field-names` flag. For example:
+redact the field names in that namespace using the `--redactFieldNames` flag. For example:
 
 ```shell
 anonymongo redact mongod.log --outputFile mongod.redacted.log \
