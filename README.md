@@ -48,8 +48,9 @@ Main features:
   - [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
 - [3. Using Docker](#3-using-docker)
 - [4. Tests](#4-tests)
-- [5. Adding anonymongo to trusted software on macOS](#5-adding-anonymongo-to-trusted-software-on-macos)
-- [6. Disclaimer](#6-disclaimer)
+- [5. Tasks](#5-tasks)
+- [6. Adding anonymongo to trusted software on macOS](#6-adding-anonymongo-to-trusted-software-on-macos)
+- [7. Disclaimer](#7-disclaimer)
 
 ---
 
@@ -388,7 +389,18 @@ make test
 
 ---
 
-## 5. Adding anonymongo to trusted software on macOS
+## 5. Tasks
+
+This section contains a list of tasks that are planned for upcoming releases:
+
+- [ ] Support for redacting `mongos` logs.
+- [ ] Support for redacting MongoDB Ops Manager application logs.
+- [ ] Support for redacting MongoDB Ops Manager agent logs.
+- [ ] Support for redacting diagnostic archives.
+
+---
+
+## 6. Adding anonymongo to trusted software on macOS
 
 **Please note**: You will probably need to tell your macOS to trust
 this project. When you `anonymongo` for the first time, you'll be warned that the project
@@ -420,7 +432,7 @@ xattr -d com.apple.quarantine $(which anonymongo) \
 
 ---
 
-## 6. Disclaimer
+## 7. Disclaimer
 
 This software is not supported by MongoDB, Inc. under any of their commercial support subscriptions or otherwise.
 Any usage of anonymongo is at your own risk. Bug reports, feature requests, and questions can be posted in the
