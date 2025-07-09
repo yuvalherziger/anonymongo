@@ -14,6 +14,11 @@ import (
 var version = "dev" // override at build: go build -ldflags "-X main.version=1.2.3"
 
 func main() {
+	// Prioritize ANONYMONGO_VERSION env var if set
+	if v := os.Getenv("ANONYMONGO_VERSION"); v != "" {
+		version = v
+	}
+
 	// Flag for the "redact" command
 	var (
 		replacement         string
@@ -328,8 +333,8 @@ You can provide input either as a file (as the first argument) or by piping logs
 	redactCmd.Flags().BoolVarP(&encrypt, "encrypt", "y", false, "Encrypt values with deterministic encryption")
 	redactCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact network locations to 255.255.255.255:65535")
 	redactCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
-	redactCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redact-field-names", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
-addition to their values. The structure is either a namespace; e.g., 'dbName.collName'`)
+	redactCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redactFieldNames", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
+addition to their values. The structure is a namespace; e.g., 'dbName.collName'`)
 	redactCmd.Flags().StringVarP(&atlasProjectId, "atlasProjectId", "p", "", "Atlas Project ID, if reading logs from an Atlas cluster")
 	redactCmd.Flags().StringVarP(&atlasClusterName, "atlasClusterName", "c", "", "Atlas cluster name, if reading logs from an Atlas cluster")
 	redactCmd.Flags().StringVarP(&atlasPublicKey, "atlasPublicKey", "", "", `Atlas API public key, if reading logs from an Atlas cluster

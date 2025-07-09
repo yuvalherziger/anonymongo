@@ -1,5 +1,7 @@
 # @/Dockerfile
 FROM golang:1.24-alpine AS builder
+ARG ANONYMONGO_VERSION=dev
+ENV ANONYMONGO_VERSION=${ANONYMONGO_VERSION}
 RUN apk add --no-cache make
 WORKDIR /app
 COPY Makefile ./

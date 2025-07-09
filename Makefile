@@ -3,8 +3,9 @@ DIST_DIR=./dist
 SRC_DIR=./src
 PKG=$(SRC_DIR)/...
 GO=go
+DOCKER=docker
 
-.PHONY: all build test clean fmt vet
+.PHONY: all build test clean fmt vet docker-build
 
 all: build
 
@@ -31,3 +32,7 @@ clean:
 run: build
 	@echo "Running $(BINARY_NAME)..."
 	$(DIST_DIR)/$(BINARY_NAME)
+
+docker-build:
+	@echo "Building Docker image..."
+	$(DOCKER) build -t $(BINARY_NAME) .
