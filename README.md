@@ -393,10 +393,11 @@ make test
 
 This section contains a list of tasks that are planned for upcoming releases:
 
-- [ ] Support for redacting `mongos` logs.
-- [ ] Support for redacting MongoDB Ops Manager application logs.
-- [ ] Support for redacting MongoDB Ops Manager agent logs.
-- [ ] Support for redacting diagnostic archives.
+- [ ] Support for redacting `mongos` logs - [issue #43](https://github.com/yuvalherziger/anonymongo/issues/43).
+- [ ] Support for redacting MongoDB Ops Manager application logs - [issue #43](https://github.com/yuvalherziger/anonymongo/issues/43).
+- [ ] Support for redacting MongoDB Ops Manager agent logs - [issue #43](https://github.com/yuvalherziger/anonymongo/issues/43).
+- [ ] Support for redacting diagnostic archives - [issue #43](https://github.com/yuvalherziger/anonymongo/issues/43).
+- [ ] Expand binary format preservation support (e.g., UUIDs) - [issue #49](https://github.com/yuvalherziger/anonymongo/issues/49).
 
 ---
 
