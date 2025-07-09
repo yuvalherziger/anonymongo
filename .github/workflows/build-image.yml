@@ -40,3 +40,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ANONYMONGO_VERSION=${{ github.ref_name }}

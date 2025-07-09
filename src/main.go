@@ -14,6 +14,11 @@ import (
 var version = "dev" // override at build: go build -ldflags "-X main.version=1.2.3"
 
 func main() {
+	// Prioritize ANONYMONGO_VERSION env var if set
+	if v := os.Getenv("ANONYMONGO_VERSION"); v != "" {
+		version = v
+	}
+
 	// Flag for the "redact" command
 	var (
 		replacement         string
