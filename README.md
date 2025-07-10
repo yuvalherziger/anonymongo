@@ -247,7 +247,7 @@ under the name `anonymongo.enc.key`. You can use this key to decrypt individual 
 **Limitations:**
 
 - You cannot use the `--encrypt` flag with neither stdin nor stdout.
-- The encryption key must be a 32-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
+- The encryption key must be a 64-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
   It's recommended that you allow `anonymongo` to generate a random key for you. It will be stored in the current
   directory under the name, and you can move it to a secure location for later use (e.g., a key management store).
 - The `--encrypt` command doesn't preserve formats in its ciphertext. It encrypts and encodes the original values.

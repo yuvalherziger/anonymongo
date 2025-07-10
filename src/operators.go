@@ -313,6 +313,7 @@ var SearchOperators = func() OrderedMap {
 	embeddedDocument.Set("path", FieldName)
 	embeddedDocument.Set("operator", Redactable)
 	embeddedDocument.Set("score", Exempt)
+	embeddedDocument.Set("operator", OperatorMap)
 	SearchOperators.Set("embeddedDocument", embeddedDocument)
 
 	equals := orderedmap.NewOrderedMap[string, any]()

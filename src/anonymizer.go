@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"regexp"
 	"strings"
 
 	"github.com/elliotchance/orderedmap/v3"
@@ -18,6 +19,7 @@ var (
 	shouldEncrypt        = false
 	encryptionKey        []byte
 	redactNamespaces     = false
+	redactedFieldsRegexp *regexp.Regexp
 )
 
 func SetRedactedString(s string)            { redactedString = s }
@@ -28,6 +30,17 @@ func SetEagerRedactionPaths(paths []string) { eagerRedactionPaths = paths }
 func SetEncryptionKey(key []byte)           { encryptionKey = key }
 func SetShouldEncrypt(b bool)               { shouldEncrypt = b }
 func SetRedactNamespaces(b bool)            { redactNamespaces = b }
+func SetRedactedFieldsRegexp(re string) {
+	if re == "" {
+		redactedFieldsRegexp = nil
+	} else {
+		var err error
+		redactedFieldsRegexp, err = regexp.Compile(re)
+		if err != nil {
+			panic("Invalid regular expression for redacted fields: " + re)
+		}
+	}
+}
 
 func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error) {
 	entry, err := UnmarshalOrdered([]byte(jsonStr))
@@ -141,43 +154,43 @@ func redactCommand(cmd *orderedmap.OrderedMap[string, any], shouldEagerRedact bo
 	}
 	if query, ok := cmd.Get("query"); ok {
 		if queryMap, ok := query.(*orderedmap.OrderedMap[string, any]); ok {
-			cmd.Set("query", redactQueryValues(queryMap, shouldEagerRedact, false, nil))
+			cmd.Set("query", redactQueryValues(queryMap, shouldEagerRedact, false, nil, []string{}))
 		}
 	}
 	if filter, ok := cmd.Get("filter"); ok {
 		if filterMap, ok := filter.(*orderedmap.OrderedMap[string, any]); ok {
-			cmd.Set("filter", redactQueryValues(filterMap, shouldEagerRedact, false, nil))
+			cmd.Set("filter", redactQueryValues(filterMap, shouldEagerRedact, false, nil, []string{}))
 		}
 	}
 	if sort, ok := cmd.Get("sort"); ok {
 		if sortMap, ok := sort.(*orderedmap.OrderedMap[string, any]); ok {
-			cmd.Set("sort", redactQueryValues(sortMap, shouldEagerRedact, false, nil))
+			cmd.Set("sort", redactQueryValues(sortMap, shouldEagerRedact, false, nil, []string{}))
 		}
 	}
 	if update, ok := cmd.Get("update"); ok {
 		if updateMap, ok := update.(*orderedmap.OrderedMap[string, any]); ok {
-			cmd.Set("update", redactQueryValues(updateMap, shouldEagerRedact, false, nil))
+			cmd.Set("update", redactQueryValues(updateMap, shouldEagerRedact, false, nil, []string{}))
 		}
 	}
 	if updates, ok := cmd.Get("updates"); ok {
 		if updatesArr, ok := updates.([]any); ok {
-			cmd.Set("updates", redactArrayValues(updatesArr, shouldEagerRedact, false))
+			cmd.Set("updates", redactArrayValues(updatesArr, shouldEagerRedact, false, false, []string{}))
 		}
 	}
 	if update, ok := cmd.Get("q"); ok {
 		if updateMap, ok := update.(*orderedmap.OrderedMap[string, any]); ok {
-			cmd.Set("q", redactQueryValues(updateMap, shouldEagerRedact, false, nil))
+			cmd.Set("q", redactQueryValues(updateMap, shouldEagerRedact, false, nil, []string{}))
 		}
 	}
 	if update, ok := cmd.Get("u"); ok {
 		if updateMap, ok := update.(*orderedmap.OrderedMap[string, any]); ok {
-			cmd.Set("u", redactQueryValues(updateMap, shouldEagerRedact, false, nil))
+			cmd.Set("u", redactQueryValues(updateMap, shouldEagerRedact, false, nil, []string{}))
 		}
 	}
 	if _, isInsert := cmd.Get("insert"); isInsert {
 		if docs, ok := cmd.Get("documents"); ok {
 			if docsArr, ok := docs.([]any); ok {
-				cmd.Set("documents", redactArrayValues(docsArr, shouldEagerRedact, false))
+				cmd.Set("documents", redactArrayValues(docsArr, shouldEagerRedact, false, false, []string{}))
 			}
 		}
 	}
@@ -249,17 +262,36 @@ func traverseMapPath(path []string, operatorMap *orderedmap.OrderedMap[string, a
 	return nil, false
 }
 
+func augmentOp(op *orderedmap.OrderedMap[string, any], v *orderedmap.OrderedMap[string, any]) orderedmap.OrderedMap[string, any] {
+	if redactedFieldsRegexp == nil {
+		return *op
+	}
+	augmentedOp := orderedmap.NewOrderedMap[string, any]()
+	convertRedactableToExempt := false
+	// iterate through the op keys, and check whether any of them is a FieldName:
+	for el := op.Front(); el != nil; el = el.Next() {
+		if el.Value == FieldName {
+			val, _ := v.Get(el.Key)
+			fieldName, _ := val.(string)
+			if fieldName != "" && !redactedFieldsRegexp.MatchString(fieldName) {
+				convertRedactableToExempt = true
+			}
+		}
+		augmentedOp.Set(el.Key, el.Value)
+	}
+
+	if convertRedactableToExempt {
+		for el := augmentedOp.Front(); el != nil; el = el.Next() {
+			if el.Value == Redactable {
+				augmentedOp.Set(el.Key, Exempt)
+			}
+		}
+	}
+	return *augmentedOp
+}
+
 func getOp(keyPath []string, isSearchStage bool) (interface{}, bool) {
-	if !isSearchStage {
-		coreOpMeta, isCoreOp := CoreOperators.Get(keyPath[len(keyPath)-1])
-		if isCoreOp {
-			return coreOpMeta, true
-		}
-		aggOpMeta, isAggOp := traverseMapPath(keyPath, AggregationOperators, false)
-		if isAggOp {
-			return aggOpMeta, true
-		}
-	} else {
+	if isSearchStage {
 		searchOpMeta, isSearchOp := traverseMapPath(keyPath, SearchAggregationOperators, true)
 		if isSearchOp {
 			return searchOpMeta, true
@@ -267,6 +299,15 @@ func getOp(keyPath []string, isSearchStage bool) (interface{}, bool) {
 		coreSearchOpMeta, isCoreSearchOp := SearchOperators.Get(keyPath[len(keyPath)-1])
 		if isCoreSearchOp {
 			return coreSearchOpMeta, true
+		}
+	} else {
+		coreOpMeta, isCoreOp := CoreOperators.Get(keyPath[len(keyPath)-1])
+		if isCoreOp {
+			return coreOpMeta, true
+		}
+		aggOpMeta, isAggOp := traverseMapPath(keyPath, AggregationOperators, false)
+		if isAggOp {
+			return aggOpMeta, true
 		}
 	}
 	return nil, false
@@ -285,6 +326,14 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 			if redactFieldNames && (!isOp || (isOp && opMeta == nil)) {
 				redactedKey = HashName(k)
 			}
+			if isOp && inSearchStage && opMeta != nil {
+				if opMap, ok := opMeta.(*orderedmap.OrderedMap[string, any]); ok {
+					if vMap, ok := v.(*orderedmap.OrderedMap[string, any]); ok {
+						augmentedOpMeta := augmentOp(opMap, vMap)
+						opMeta = &augmentedOpMeta
+					}
+				}
+			}
 			switch meta := opMeta.(type) {
 			case OperatorType:
 				switch meta {
@@ -302,9 +351,10 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 						case *orderedmap.OrderedMap[string, any]:
 							newMap.Set(redactedKey, redactPipelineStage(vTyped, redactFieldNames, newKeyPath, inSearchStage))
 						case []any:
-							newMap.Set(redactedKey, redactArrayValues(vTyped, redactFieldNames, inSearchStage))
+							isSelectivelyRedactable := isRedactableFieldPatternInArray(vTyped)
+							newMap.Set(redactedKey, redactArrayValues(vTyped, redactFieldNames, inSearchStage, isSelectivelyRedactable, newKeyPath))
 						default:
-							newMap.Set(redactedKey, redactScalarValue([]string{k}, v, inSearchStage))
+							newMap.Set(redactedKey, redactScalarValue([]string{k}, v, inSearchStage, false))
 						}
 					} else {
 						newMap.Set(redactedKey, v)
@@ -327,7 +377,8 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 					continue
 				case Pipeline:
 					if arr, ok := v.([]any); ok {
-						newMap.Set(redactedKey, redactArrayValues(arr, redactFieldNames, inSearchStage))
+						isSelectivelyRedactable := isRedactableFieldPatternInArray(arr)
+						newMap.Set(redactedKey, redactArrayValues(arr, redactFieldNames, inSearchStage, isSelectivelyRedactable, newKeyPath))
 					} else {
 						newMap.Set(redactedKey, v)
 					}
@@ -367,9 +418,10 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 										case *orderedmap.OrderedMap[string, any]:
 											newSubMap.Set(subK, redactPipelineStage(subVTyped, redactFieldNames, append(newKeyPath, subK), inSearchStage))
 										case []any:
-											newSubMap.Set(subK, redactArrayValues(subVTyped, redactFieldNames, inSearchStage))
+											isSelectivelyRedactable := isRedactableFieldPatternInArray(subVTyped)
+											newSubMap.Set(subK, redactArrayValues(subVTyped, redactFieldNames, inSearchStage, isSelectivelyRedactable, append(newKeyPath, subK)))
 										default:
-											newSubMap.Set(subK, redactScalarValue([]string{k}, subV, inSearchStage))
+											newSubMap.Set(subK, redactScalarValue([]string{k}, subV, inSearchStage, false))
 										}
 									} else {
 										newSubMap.Set(subK, subV)
@@ -403,7 +455,8 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 									continue
 								case Pipeline:
 									if arr, ok := subV.([]any); ok {
-										newSubMap.Set(subK, redactArrayValues(arr, redactFieldNames, inSearchStage))
+										isSelectivelyRedactable := isRedactableFieldPatternInArray(arr)
+										newSubMap.Set(subK, redactArrayValues(arr, redactFieldNames, inSearchStage, isSelectivelyRedactable, newKeyPath))
 									} else {
 										newSubMap.Set(subK, subV)
 									}
@@ -421,9 +474,10 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 						case *orderedmap.OrderedMap[string, any]:
 							newSubMap.Set(redactedSubK, redactPipelineStage(subVTyped, redactFieldNames, append(newKeyPath, subK), inSearchStage))
 						case []any:
-							newSubMap.Set(redactedSubK, redactArrayValues(subVTyped, redactFieldNames, inSearchStage))
+							isSelectivelyRedactable := isRedactableFieldPatternInArray(subVTyped)
+							newSubMap.Set(redactedSubK, redactArrayValues(subVTyped, redactFieldNames, inSearchStage, isSelectivelyRedactable, append(newKeyPath, subK)))
 						default:
-							newSubMap.Set(redactedSubK, redactScalarValue([]string{k}, subV, inSearchStage))
+							newSubMap.Set(redactedSubK, redactScalarValue([]string{k}, subV, inSearchStage, false))
 						}
 					}
 					newMap.Set(redactedKey, newSubMap)
@@ -438,25 +492,28 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 			case *orderedmap.OrderedMap[string, any]:
 				newMap.Set(redactedKey, redactPipelineStage(vTyped, redactFieldNames, newKeyPath, inSearchStage))
 			case []any:
-				newMap.Set(redactedKey, redactArrayValues(vTyped, redactFieldNames, inSearchStage))
+				isSelectivelyRedactable := isRedactableFieldPatternInArray(vTyped)
+				newMap.Set(redactedKey, redactArrayValues(vTyped, redactFieldNames, inSearchStage, isSelectivelyRedactable, newKeyPath))
 			default:
-				newMap.Set(redactedKey, redactScalarValue(newKeyPath, v, inSearchStage))
+				newMap.Set(redactedKey, redactScalarValue(newKeyPath, v, inSearchStage, false))
 			}
 		}
 		return newMap
 	case []any:
-		return redactArrayValues(s, redactFieldNames, inSearchStage)
+		isSelectivelyRedactable := isRedactableFieldPatternInArray(s)
+		return redactArrayValues(s, redactFieldNames, inSearchStage, isSelectivelyRedactable, keyPath)
 	default:
 		return stage
 	}
 }
 
-func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames bool, isSearchStage bool, parentCoreOp interface{}) *orderedmap.OrderedMap[string, any] {
+func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames bool, isSearchStage bool, parentCoreOp interface{}, keyPath []string) *orderedmap.OrderedMap[string, any] {
 	newObj := orderedmap.NewOrderedMap[string, any]()
 	for el := obj.Front(); el != nil; el = el.Next() {
 		k := el.Key
 		v := el.Value
 		redactedKey := k
+		newKeyPath := append(keyPath, k)
 		var isOp bool
 		var coreOp interface{}
 		if parentCoreOp != nil {
@@ -475,9 +532,10 @@ func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames
 		}
 		switch val := v.(type) {
 		case *orderedmap.OrderedMap[string, any]:
-			newObj.Set(redactedKey, redactQueryValues(val, redactFieldNames, isSearchStage, coreOp))
+			newObj.Set(redactedKey, redactQueryValues(val, redactFieldNames, isSearchStage, coreOp, newKeyPath))
 		case []any:
-			newObj.Set(redactedKey, redactArrayValuesWithKey(k, val, redactFieldNames, isSearchStage))
+			isSelectivelyRedactable := isRedactableFieldPatternInArray(val)
+			newObj.Set(redactedKey, redactArrayValuesWithKey(k, val, redactFieldNames, isSearchStage, isSelectivelyRedactable, newKeyPath))
 		default:
 			if v != nil {
 				if str, ok := v.(string); ok && len(str) > 0 && str[0] == '$' {
@@ -492,7 +550,7 @@ func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames
 					}
 				} else {
 					if coreOp != Exempt {
-						newObj.Set(redactedKey, redactScalarValue([]string{k}, v, isSearchStage))
+						newObj.Set(redactedKey, redactScalarValue(newKeyPath, v, isSearchStage, false))
 					} else {
 						newObj.Set(redactedKey, v)
 					}
@@ -503,13 +561,28 @@ func redactQueryValues(obj *orderedmap.OrderedMap[string, any], redactFieldNames
 	return newObj
 }
 
-func redactArrayValuesWithKey(parentKey string, arr []any, redactFieldNames bool, isSearchStage bool) []any {
+func isRedactableFieldPatternInArray(arr []any) bool {
+	if redactedFieldsRegexp == nil {
+		return false
+	}
+	for _, item := range arr {
+		// check if the item is a string, then strip of a leading dollar sign and matches the redactedFieldsRegexp
+		if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
+			if redactedFieldsRegexp != nil && redactedFieldsRegexp.MatchString(strings.TrimPrefix(str, "$")) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func redactArrayValuesWithKey(parentKey string, arr []any, redactFieldNames bool, isSearchStage bool, isSelectivelyRedactable bool, keyPath []string) []any {
 	for i, item := range arr {
 		switch itemTyped := item.(type) {
 		case *orderedmap.OrderedMap[string, any]:
-			arr[i] = redactQueryValues(itemTyped, redactFieldNames, isSearchStage, nil)
+			arr[i] = redactQueryValues(itemTyped, redactFieldNames, isSearchStage, nil, keyPath)
 		case []any:
-			arr[i] = redactArrayValuesWithKey(parentKey, itemTyped, redactFieldNames, isSearchStage)
+			arr[i] = redactArrayValuesWithKey(parentKey, itemTyped, redactFieldNames, isSearchStage, isSelectivelyRedactable, keyPath)
 		default:
 			if item != nil {
 				if str, ok := item.(string); ok && len(str) > 0 && str[0] == '$' {
@@ -523,7 +596,7 @@ func redactArrayValuesWithKey(parentKey string, arr []any, redactFieldNames bool
 						arr[i] = item
 					}
 				} else {
-					arr[i] = redactScalarValue([]string{parentKey}, item, isSearchStage)
+					arr[i] = redactScalarValue([]string{parentKey}, item, isSearchStage, isSelectivelyRedactable)
 				}
 			}
 		}
@@ -531,8 +604,8 @@ func redactArrayValuesWithKey(parentKey string, arr []any, redactFieldNames bool
 	return arr
 }
 
-func redactArrayValues(arr []any, redactFieldNames bool, isSearchStage bool) []any {
-	return redactArrayValuesWithKey("", arr, redactFieldNames, isSearchStage)
+func redactArrayValues(arr []any, redactFieldNames bool, isSearchStage bool, isSelectivelyRedactable bool, keyPath []string) []any {
+	return redactArrayValuesWithKey("", arr, redactFieldNames, isSearchStage, isSelectivelyRedactable, keyPath)
 }
 
 func redactString(s string, nonEncryptedValue string) string {
@@ -546,22 +619,41 @@ func redactString(s string, nonEncryptedValue string) string {
 	return nonEncryptedValue
 }
 
-func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool) interface{} {
-	key := ""
+func reMatchesAnyKeyInPath(keyPath *[]string, pattern *regexp.Regexp) bool {
+	if keyPath == nil || pattern == nil {
+		return false
+	}
+	for _, key := range *keyPath {
+		if pattern.MatchString(key) {
+			return true
+		}
+	}
+	return false
+}
+
+func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool, isSelectivelyRedactable bool) interface{} {
+	closestParentKey := ""
 	if len(keyPath) == 0 {
-		key = ""
+		closestParentKey = ""
 	} else {
 		op, isOp := getOp(keyPath, isSearchStage)
 		if !isOp {
-			key = keyPath[len(keyPath)-1]
+			closestParentKey = keyPath[len(keyPath)-1]
 		} else {
 			if op == Exempt {
 				return v
 			}
 		}
 	}
-	key = keyPath[len(keyPath)-1]
-	switch key {
+	returnPlain := !isSearchStage &&
+		redactedFieldsRegexp != nil &&
+		!isSelectivelyRedactable &&
+		!reMatchesAnyKeyInPath(&keyPath, redactedFieldsRegexp)
+	if returnPlain {
+		return v
+	}
+	closestParentKey = keyPath[len(keyPath)-1]
+	switch closestParentKey {
 	case "$date":
 		return redactString(v.(string), "1970-01-01T00:00:00.000Z")
 	case "$oid":
