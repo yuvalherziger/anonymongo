@@ -294,7 +294,7 @@ The `--redactNumbers` flag (default: `false`) redacts all boolean values to a co
 
 ##### 2.1.7.4 `--redactFieldsRegexp <REGEXP>`
 
-The `--redactFieldsRegexp` flag allows you to redact field names that match a specific regular expression.
+The `--redactFieldsRegexp` flag allows you to redact values of fields whose names match a specific regular expression.
 
 
 **Important notes:**
