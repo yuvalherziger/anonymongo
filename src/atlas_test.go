@@ -22,8 +22,8 @@ func TestGetHostsFromConnectionString(t *testing.T) {
 	}{
 		{
 			name:          "standard replica set connection string",
-			connStr:       "mongodb://test123-shard-00-00.b0cch.mongodb.net:27017,test123-shard-00-01.b0cch.mongodb.net:27017,test123-shard-00-02.b0cch.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6o93v6-shard-0",
-			expectedHosts: []string{"test123-shard-00-00.b0cch.mongodb.net", "test123-shard-00-01.b0cch.mongodb.net", "test123-shard-00-02.b0cch.mongodb.net"},
+			connStr:       "mongodb://mycluster-shard-00-00.abcde.mongodb.net:27017,mycluster-shard-00-01.abcde.mongodb.net:27017,mycluster-shard-00-02.abcde.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6o93v6-shard-0",
+			expectedHosts: []string{"mycluster-shard-00-00.abcde.mongodb.net", "mycluster-shard-00-01.abcde.mongodb.net", "mycluster-shard-00-02.abcde.mongodb.net"},
 			expectErr:     false,
 		},
 		{
@@ -104,7 +104,7 @@ func TestGetAtlasClusterInfo(t *testing.T) {
 		if info == nil {
 			t.Fatal("Expected cluster info, but got nil")
 		}
-		expectedConnStr := "mongodb://test123-shard-00-00.b0cch.mongodb.net:27017,test123-shard-00-01.b0cch.mongodb.net:27017,test123-shard-00-02.b0cch.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6o93v6-shard-0"
+		expectedConnStr := "mongodb://mycluster-shard-00-00.abcde.mongodb.net:27017,mycluster-shard-00-01.abcde.mongodb.net:27017,mycluster-shard-00-02.abcde.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6o93v6-shard-0"
 		if info.ConnectionStrings.Standard != expectedConnStr {
 			t.Errorf("Expected connection string '%s', but got '%s'", expectedConnStr, info.ConnectionStrings.Standard)
 		}

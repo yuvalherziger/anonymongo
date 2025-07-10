@@ -44,7 +44,8 @@ Main features:
       - [2.1.7.1 `--replacement <STRING>`](#2171---replacement-string)
       - [2.1.7.2 `--redactBooleans`](#2172---redactbooleans)
       - [2.1.7.3 `--redactNumbers`](#2173---redactnumbers)
-      - [2.1.7.4 `--redactNamspaces`](#2174---redactnamespaces)
+      - [2.1.7.4 `--redactFieldsRegexp`](#2174---redactfieldsregexp-regexp)
+      - [2.1.7.5 `--redactNamspaces`](#2175---redactnamespaces)
   - [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
 - [3. Using Docker](#3-using-docker)
 - [4. Tests](#4-tests)
@@ -90,14 +91,14 @@ Having trouble running `anonymongo` after installing it with Homebrew? See [4. A
 Browse to this repository's [release page](https://github.com/yuvalherziger/anonymongo/releases) and
 download the latest stable release for your OS and architecture (e.g., `anonymongo_Windows_x86_64.zip`).
 
-Here's the full list of the latest stable (0.3.x) binaries for your convenience:
+Here's the full list of the latest stable binaries for your convenience:
 
-- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Darwin_arm64.tar.gz)
-- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Darwin_x86_64.tar.gz)
-- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Windows_x86_64.zip)
-- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Windows_arm64.zip)
-- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Linux_arm64.tar.gz)
-- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.1.0/anonymongo_Linux_x86_64.tar.gz)
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Linux_x86_64.tar.gz)
 
 Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to trust the program explicitly.
 
@@ -247,7 +248,7 @@ under the name `anonymongo.enc.key`. You can use this key to decrypt individual 
 **Limitations:**
 
 - You cannot use the `--encrypt` flag with neither stdin nor stdout.
-- The encryption key must be a 32-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
+- The encryption key must be a 64-byte base64-encoded AES256 SIV-based key, as `anonymongo` uses SIV for encryption.
   It's recommended that you allow `anonymongo` to generate a random key for you. It will be stored in the current
   directory under the name, and you can move it to a secure location for later use (e.g., a key management store).
 - The `--encrypt` command doesn't preserve formats in its ciphertext. It encrypts and encodes the original values.
@@ -291,7 +292,33 @@ The `--redactNumbers` flag (default: `false`) redacts all boolean values to a co
 
 ---
 
-##### 2.1.7.4 `--redactNamespaces`
+##### 2.1.7.4 `--redactFieldsRegexp <REGEXP>`
+
+The `--redactFieldsRegexp` flag allows you to redact field names that match a specific regular expression.
+
+
+**Important notes:**
+
+- Your regular expression must adhere to the [Go regular expression syntax](https://pkg.go.dev/regexp/syntax).
+- Using this flag will not redact fields that don't match the pattern. It will only redact fields that
+  match the pattern, leaving the rest of the fields intact.
+
+The example below redacts all field name either `SSN`, `NHS_ID`, or `NATIONAL_ID` (and no other fields):
+
+```shell
+anonymongo redact --redactFieldsRegexp '^(SSN|NHS_ID|NATIONAL_ID)$'
+```
+
+Since, it's a regular expression, you can use it to redact fields that match a specific pattern. For example, any field
+whose name contains SSN, case-insensitive:
+
+```shell
+anonymongo redact --redactFieldsRegexp '(?i)^.*ssn.*$'
+```
+
+---
+
+##### 2.1.7.5 `--redactNamespaces`
 
 The `--redactNamespaces` flag (default: `false`) hashes database and collection names in the log file.
 

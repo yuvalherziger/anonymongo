@@ -11,8 +11,8 @@
   },
   "clusterType" : "REPLICASET",
   "connectionStrings" : {
-    "standard" : "mongodb://test123-shard-00-00.b0cch.mongodb.net:27017,test123-shard-00-01.b0cch.mongodb.net:27017,test123-shard-00-02.b0cch.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6o93v6-shard-0",
-    "standardSrv" : "mongodb+srv://test123.b0cch.mongodb.net"
+    "standard" : "mongodb://mycluster-shard-00-00.abcde.mongodb.net:27017,mycluster-shard-00-01.abcde.mongodb.net:27017,mycluster-shard-00-02.abcde.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6o93v6-shard-0",
+    "standardSrv" : "mongodb+srv://mycluster.abcde.mongodb.net"
   },
   "createDate" : "2025-06-29T11:18:06Z",
   "diskWarmingMode" : "FULLY_WARMED",
@@ -23,18 +23,18 @@
   "id" : "686120ee9d529e0d091452fc",
   "labels" : [ ],
   "links" : [ {
-    "href" : "https://cloud.mongodb.com/api/atlas/v2/groups/649c9a785e44024904135520/clusters/test123",
+    "href" : "https://cloud.mongodb.com/api/atlas/v2/groups/649c9a785e44024904135520/clusters/mycluster",
     "rel" : "self"
   }, {
-    "href" : "https://cloud.mongodb.com/api/atlas/v2/groups/649c9a785e44024904135520/clusters/test123/backup/restoreJobs",
+    "href" : "https://cloud.mongodb.com/api/atlas/v2/groups/649c9a785e44024904135520/clusters/mycluster/backup/restoreJobs",
     "rel" : "https://cloud.mongodb.com/restoreJobs"
   }, {
-    "href" : "https://cloud.mongodb.com/api/atlas/v2/groups/649c9a785e44024904135520/clusters/test123/backup/snapshots",
+    "href" : "https://cloud.mongodb.com/api/atlas/v2/groups/649c9a785e44024904135520/clusters/mycluster/backup/snapshots",
     "rel" : "https://cloud.mongodb.com/snapshots"
   } ],
   "mongoDBMajorVersion" : "8.0",
   "mongoDBVersion" : "8.0.11",
-  "name" : "test123",
+  "name" : "mycluster",
   "paused" : false,
   "pitEnabled" : false,
   "redactClientLogData" : false,

@@ -456,9 +456,78 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.update.$addToSet.tags.$each.2": "REDACTED",
 			},
 		},
+		{
+			Name:      "Simple find with redacted fields regexp",
+			InputFile: "simple_find.json",
+			Options: func() {
+				setOptionsRedactedStrings()
+				SetRedactedFieldsRegexp("^foo$")
+			},
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.foo": "REDACTED",
+				"command.filter.bar": "another simple string",
+			},
+		},
+		{
+			Name:      "find with $expr and redacted fields regexp",
+			InputFile: "find_with_expr.json",
+			Options: func() {
+				setOptionsRedactedStrings()
+				SetRedactedFieldsRegexp("bar")
+			},
+			ExpectedPaths: map[string]interface{}{
+				"command.filter.$expr.$and.0.$eq.1": "simple string",
+				"command.filter.$expr.$and.1.$eq.1": "REDACTED",
+			},
+		},
+		{
+			Name:      "Search with compound operators and redacted fields regexp",
+			InputFile: "search_with_compound_operators.json",
+			Options: func() {
+				setOptionsRedactedStrings()
+				SetRedactedFieldsRegexp("^(items|category$)")
+			},
+			ExpectedPaths: map[string]interface{}{
+				"command.pipeline.0.$search.compound.should.0.text.path":                                                              "type",
+				"command.pipeline.0.$search.compound.should.0.text.query":                                                             "apple",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":                                              "category",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.path":                                            "in_stock",
+				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.value":                                           true,
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.path":                                  "items",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.path":    "items.tags",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.path":  "items.name",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.score.embedded.aggregate":              "mean",
+				"command.pipeline.0.$search.compound.should.2.exists.path":                                                            "quantities.lemons",
+				"command.pipeline.0.$search.compound.should.3.geoShape.relation":                                                      "disjoint",
+				"command.pipeline.0.$search.compound.should.3.geoShape.geometry.type":                                                 "Polygon",
+				"command.pipeline.0.$search.compound.should.3.geoShape.path":                                                          "address.location",
+				"command.pipeline.0.$search.compound.minimumShouldMatch":                                                              float64(1),
+			},
+		},
+		{
+			Name:      "Update with nested logical query and redacted fields regexp",
+			InputFile: "update_with_nested_logical_query.json",
+			Options: func() {
+				setOptionsRedactedStrings()
+				SetRedactedFieldsRegexp("^(name|uAt)$")
+			},
+			ExpectedPaths: map[string]interface{}{
+				"command.query.$and.0.name":                 "REDACTED",
+				"command.query.$and.0.active.$ne":           true,
+				"command.query.$and.1.$or.0.cAt.$lte.$date": "2025-05-30T09:38:12.155Z",
+				"command.query.$and.1.$or.1.uAt.$lte.$date": "1970-01-01T00:00:00.000Z",
+				"command.update.$set.uAt.$date":             "1970-01-01T00:00:00.000Z",
+			},
+		},
 	}
 }
 
+// These are just preset functions to set the options for the anonymizer.
+// Anonymous functions can be used directly in the test cases,
+// but these are more readable.
 func setOptionsRedactedStrings() {
 	SetRedactedString("REDACTED")
 	SetRedactNumbers(false)
@@ -466,6 +535,7 @@ func setOptionsRedactedStrings() {
 	SetRedactIPs(false)
 	SetEagerRedactionPaths([]string{})
 	SetRedactNamespaces(false)
+	SetRedactedFieldsRegexp("")
 }
 
 func setOptionsRedactedStringsAndNamespaces() {
@@ -475,6 +545,7 @@ func setOptionsRedactedStringsAndNamespaces() {
 	SetRedactIPs(false)
 	SetEagerRedactionPaths([]string{})
 	SetRedactNamespaces(true)
+	SetRedactedFieldsRegexp("")
 }
 
 func setOptionsRedactedStringsWithEagerRedaction() {
@@ -486,6 +557,7 @@ func setOptionsRedactedStringsWithEagerRedaction() {
 		"my_db.my_coll",
 	})
 	SetRedactNamespaces(false)
+	SetRedactedFieldsRegexp("")
 }
 
 func setOptionsRedactedAllWithOverride() {
@@ -495,6 +567,7 @@ func setOptionsRedactedAllWithOverride() {
 	SetRedactIPs(true)
 	SetEagerRedactionPaths([]string{})
 	SetRedactNamespaces(false)
+	SetRedactedFieldsRegexp("")
 }
 
 func setOptionsRedactedAll() {
@@ -504,6 +577,7 @@ func setOptionsRedactedAll() {
 	SetRedactIPs(true)
 	SetEagerRedactionPaths([]string{})
 	SetRedactNamespaces(false)
+	SetRedactedFieldsRegexp("")
 }
 
 func setOptionsRedactedIPs() {
@@ -513,4 +587,5 @@ func setOptionsRedactedIPs() {
 	SetRedactIPs(true)
 	SetEagerRedactionPaths([]string{})
 	SetRedactNamespaces(false)
+	SetRedactedFieldsRegexp("")
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var version = "dev" // override at build: go build -ldflags "-X main.version=1.2.3"
@@ -21,21 +22,22 @@ func main() {
 
 	// Flag for the "redact" command
 	var (
-		replacement         string
-		redactNumbers       bool
-		redactBooleans      bool
-		redactIPs           bool
-		encrypt             bool
-		outputFile          string
-		eagerRedactionPaths []string
-		atlasProjectId      string
-		atlasClusterName    string
-		atlasPublicKey      string
-		atlasPrivateKey     string
-		atlasLogStartDate   int
-		atlasLogEndDate     int
-		encryptionKeyFile   string
-		redactNamespaces    bool
+		replacement          string
+		redactNumbers        bool
+		redactBooleans       bool
+		redactIPs            bool
+		encrypt              bool
+		outputFile           string
+		eagerRedactionPaths  []string
+		redactedFieldsRegexp string
+		atlasProjectId       string
+		atlasClusterName     string
+		atlasPublicKey       string
+		atlasPrivateKey      string
+		atlasLogStartDate    int
+		atlasLogEndDate      int
+		encryptionKeyFile    string
+		redactNamespaces     bool
 	)
 	// Flag for the "decrypt" command
 	var (
@@ -57,6 +59,20 @@ making them safe to share. It also provides utilities for related tasks.`,
 
 You can provide input either as a file (as the first argument) or by piping logs to stdin.`,
 		Args: cobra.MaximumNArgs(1),
+		Example: `
+	# Redact a file:
+	anonymongo redact /path/to/mongodb.log.gz -o redacted.log.gz
+	
+	# Redact Atlas cluster logs:
+	ATLAS_PUBLIC_KEY=<API_PUBLIC_KEY> \
+	ATLAS_PRIVATE_KEY=<API_PRIVATE_KEY> \
+	anonymongo redact --atlasClusterName <CLUSTER_NAME> \
+	  --atlasProjectId <ATLAS_PROJECT_ID> \
+	  --outputFile ./mongod.redacted.log
+
+	# Redact only specific fields with a regular expression:
+	anonymongo redact --redactFieldsRegexp '^(SSN|NHS_ID|phoneNumber)$'
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var inputFile string
 			var useStdin bool
@@ -68,6 +84,10 @@ You can provide input either as a file (as the first argument) or by piping logs
 			// Atlas-related parameter detection
 			atlasParamsSet := atlasProjectId != "" || atlasClusterName != "" || atlasLogStartDate != 0 || atlasLogEndDate != 0 || atlasPublicKey != "" || atlasPrivateKey != ""
 
+			if redactedFieldsRegexp != "" && len(eagerRedactionPaths) > 0 {
+				fmt.Fprintln(os.Stderr, "Error: Cannot provide both --redactedFieldsRegexp and --redactFieldNames flags. Please use only one.")
+				os.Exit(1)
+			}
 			// Validation: atlasLogStartDate and atlasLogEndDate must be both set or both unset
 			if (atlasLogStartDate != 0 && atlasLogEndDate == 0) || (atlasLogStartDate == 0 && atlasLogEndDate != 0) {
 				fmt.Fprintln(os.Stderr, "Error: Both --atlasLogStartDate and --atlasLogEndDate must be set together, or neither.")
@@ -118,6 +138,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 			SetAtlasLogStartDate(atlasLogStartDate)
 			SetAtlasLogEndDate(atlasLogEndDate)
 			SetRedactNamespaces(redactNamespaces)
+			SetRedactedFieldsRegexp(redactedFieldsRegexp)
 
 			var outWriter *os.File
 			var err error
@@ -280,7 +301,6 @@ You can provide input either as a file (as the first argument) or by piping logs
 			}
 		},
 	}
-
 	var decryptCmd = &cobra.Command{
 		Use:   "decrypt <value>",
 		Short: "Decrypt a value using the provided key file",
@@ -325,28 +345,80 @@ You can provide input either as a file (as the first argument) or by piping logs
 	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	// Bind flags to the "redact" subcommand
-	redactCmd.Flags().StringVarP(&replacement, "replacement", "r", "REDACTED", "Replacement string for redacted values")
-	redactCmd.Flags().StringVarP(&encryptionKeyFile, "encryptionKeyFile", "q", "./anonymongo.enc.key", "Path to the AES256 encryption key file (used only with --encrypt)")
-	redactCmd.Flags().BoolVarP(&redactNumbers, "redactNumbers", "n", false, "Redact numeric values to 0")
-	redactCmd.Flags().BoolVarP(&redactBooleans, "redactBooleans", "b", false, "Redact boolean values to false")
-	redactCmd.Flags().BoolVarP(&encrypt, "encrypt", "y", false, "Encrypt values with deterministic encryption")
-	redactCmd.Flags().BoolVarP(&redactIPs, "redactIPs", "i", false, "Redact network locations to 255.255.255.255:65535")
-	redactCmd.Flags().StringVarP(&outputFile, "outputFile", "o", "", "Write output to file instead of stdout")
-	redactCmd.Flags().StringArrayVarP(&eagerRedactionPaths, "redactFieldNames", "z", nil, `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
-addition to their values. The structure is a namespace; e.g., 'dbName.collName'`)
-	redactCmd.Flags().StringVarP(&atlasProjectId, "atlasProjectId", "p", "", "Atlas Project ID, if reading logs from an Atlas cluster")
-	redactCmd.Flags().StringVarP(&atlasClusterName, "atlasClusterName", "c", "", "Atlas cluster name, if reading logs from an Atlas cluster")
-	redactCmd.Flags().StringVarP(&atlasPublicKey, "atlasPublicKey", "", "", `Atlas API public key, if reading logs from an Atlas cluster
-(Environment variable ATLAS_PUBLIC_KEY)`)
-	redactCmd.Flags().StringVarP(&atlasPrivateKey, "atlasPrivateKey", "", "", `Atlas API private key, if reading logs from an Atlas cluster
-(Environment variable ATLAS_PRIVATE_KEY)`)
-	redactCmd.Flags().IntVarP(&atlasLogStartDate, "atlasLogStartDate", "s", 0, `Atlas log start date in epoch seconds, if reading logs from an Atlas cluster.
-Extract the last 7 days if not provided`)
-	redactCmd.Flags().IntVarP(&atlasLogEndDate, "atlasLogEndDate", "e", 0, `Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
-Extract the last 7 days if not provided`)
-	redactCmd.Flags().BoolVarP(&redactNamespaces, "redactNamespaces", "w", false, "Redact database and collection names")
+	var (
+		replacementDesc         = "Replacement string for redacted values"
+		encryptionKeyFileDesc   = "Path to the AES256 encryption key file (used only with --encrypt)"
+		redactNumbersDesc       = "Redact numeric values to 0"
+		redactBooleansDesc      = "atlasLogStartDate"
+		encryptDesc             = "Encrypt values with deterministic encryption"
+		redactIPsDesc           = "Redact network locations to 255.255.255.255:65535"
+		outputFileDesc          = "Write output to file instead of stdout"
+		eagerRedactionPathsDesc = `[EXPERIMENTAL] Specify namespaces whose field names should be redacted in
+addition to their values. The structure is a namespace; e.g., 'dbName.collName'`
+		redactedFieldsRegexpDesc = `Specify a regular expression for field names to redact.
+PLEASE NOTE: Using this flag will not redact fields that don't match the pattern`
+		atlasProjectIdDesc   = "Atlas project ID, if reading logs from an Atlas cluster"
+		atlasClusterNameDesc = "Atlas cluster name, if reading logs from an Atlas cluster"
+		atlasPublicKeyDesc   = `Atlas API public key, if reading logs from an Atlas cluster
+(Environment variable ATLAS_PUBLIC_KEY)`
+		atlasPrivateKeyDesc = `Atlas API private key, if reading logs from an Atlas cluster
+(Environment variable ATLAS_PRIVATE_KEY)`
+		atlasLogStartDateDesc = `Atlas log start date in epoch seconds, if reading logs from an Atlas cluster.
+Extract the last 7 days if not provided`
+		atlasLogEndDateDesc = `Atlas log end date in epoch seconds, if reading logs from an Atlas cluster.
+Extract the last 7 days if not provided`
+		redactNamespacesDesc = "Redact database and collection names"
+	)
+	outputOptions := pflag.NewFlagSet("Output Options", pflag.ExitOnError)
+	atlasFlags := pflag.NewFlagSet("Atlas Options", pflag.ExitOnError)
+	redactionFlags := pflag.NewFlagSet("Redaction Options", pflag.ExitOnError)
+	encryptionFlags := pflag.NewFlagSet("Encryption Options", pflag.ExitOnError)
 
+	flagGroups := map[string]*pflag.FlagSet{
+		outputOptions.Name():   outputOptions,
+		atlasFlags.Name():      atlasFlags,
+		redactionFlags.Name():  redactionFlags,
+		encryptionFlags.Name(): encryptionFlags,
+	}
+
+	redactCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		fmt.Println(cmd.Short)
+
+		fmt.Printf("\nUsage:\n  %s\n", cmd.UseLine())
+
+		if cmd.Example != "" {
+			fmt.Printf("\nExamples:\n%s\n", cmd.Example)
+		}
+
+		// Print flags by group using built-in formatting
+		for groupName, fs := range flagGroups {
+			fmt.Printf("\n%s:\n", groupName)
+			fmt.Print(fs.FlagUsagesWrapped(120))
+		}
+	})
+
+	// Bind flags to the "redact" subcommand
+	redactionFlags.StringVarP(&replacement, "replacement", "r", "REDACTED", replacementDesc)
+	encryptionFlags.StringVarP(&encryptionKeyFile, "encryptionKeyFile", "q", "./anonymongo.enc.key", encryptionKeyFileDesc)
+	redactionFlags.BoolVarP(&redactNumbers, "redactNumbers", "n", false, redactNumbersDesc)
+	redactionFlags.BoolVarP(&redactBooleans, "redactBooleans", "b", false, redactBooleansDesc)
+	encryptionFlags.BoolVarP(&encrypt, "encrypt", "y", false, encryptDesc)
+	redactionFlags.BoolVarP(&redactIPs, "redactIPs", "i", false, redactIPsDesc)
+	outputOptions.StringVarP(&outputFile, "outputFile", "o", "", outputFileDesc)
+	redactionFlags.StringArrayVarP(&eagerRedactionPaths, "redactFieldNames", "f", nil, eagerRedactionPathsDesc)
+	redactionFlags.StringVarP(&redactedFieldsRegexp, "redactFieldsRegexp", "z", "", redactedFieldsRegexpDesc)
+	atlasFlags.StringVarP(&atlasProjectId, "atlasProjectId", "p", "", atlasProjectIdDesc)
+	atlasFlags.StringVarP(&atlasClusterName, "atlasClusterName", "c", "", atlasClusterNameDesc)
+	atlasFlags.StringVarP(&atlasPublicKey, "atlasPublicKey", "", "", atlasPublicKeyDesc)
+	atlasFlags.StringVarP(&atlasPrivateKey, "atlasPrivateKey", "", "", atlasPrivateKeyDesc)
+	atlasFlags.IntVarP(&atlasLogStartDate, "atlasLogStartDate", "s", 0, atlasLogStartDateDesc)
+	atlasFlags.IntVarP(&atlasLogEndDate, "atlasLogEndDate", "e", 0, atlasLogEndDateDesc)
+	redactionFlags.BoolVarP(&redactNamespaces, "redactNamespaces", "w", false, redactNamespacesDesc)
+
+	redactCmd.Flags().AddFlagSet(outputOptions)
+	redactCmd.Flags().AddFlagSet(atlasFlags)
+	redactCmd.Flags().AddFlagSet(redactionFlags)
+	redactCmd.Flags().AddFlagSet(encryptionFlags)
 	// Bind flags to the "decrypt" subcommand
 	decryptCmd.Flags().StringVarP(&decryptionKeyFile, "decryptionKeyFile", "", "./anonymongo.enc.key", "Path to the AES256 encryption key file")
 
