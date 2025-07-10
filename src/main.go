@@ -71,7 +71,7 @@ You can provide input either as a file (as the first argument) or by piping logs
 	  --outputFile ./mongod.redacted.log
 
 	# Redact only specific fields with a regular expression:
-	anonymongo redact --redactFieldRegexp '^(SSN|NHS_ID|phoneNumber)$'
+	anonymongo redact --redactFieldsRegexp '^(SSN|NHS_ID|phoneNumber)$'
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			var inputFile string
@@ -406,7 +406,7 @@ Extract the last 7 days if not provided`
 	redactionFlags.BoolVarP(&redactIPs, "redactIPs", "i", false, redactIPsDesc)
 	outputOptions.StringVarP(&outputFile, "outputFile", "o", "", outputFileDesc)
 	redactionFlags.StringArrayVarP(&eagerRedactionPaths, "redactFieldNames", "f", nil, eagerRedactionPathsDesc)
-	redactionFlags.StringVarP(&redactedFieldsRegexp, "redactFieldRegexp", "z", "", redactedFieldsRegexpDesc)
+	redactionFlags.StringVarP(&redactedFieldsRegexp, "redactFieldsRegexp", "z", "", redactedFieldsRegexpDesc)
 	atlasFlags.StringVarP(&atlasProjectId, "atlasProjectId", "p", "", atlasProjectIdDesc)
 	atlasFlags.StringVarP(&atlasClusterName, "atlasClusterName", "c", "", atlasClusterNameDesc)
 	atlasFlags.StringVarP(&atlasPublicKey, "atlasPublicKey", "", "", atlasPublicKeyDesc)
