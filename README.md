@@ -44,7 +44,7 @@ Main features:
       - [2.1.7.1 `--replacement <STRING>`](#2171---replacement-string)
       - [2.1.7.2 `--redactBooleans`](#2172---redactbooleans)
       - [2.1.7.3 `--redactNumbers`](#2173---redactnumbers)
-      - [2.1.7.4 `--redactFieldsRegexp`](#2174---redactfieldsregexp-regexp)
+      - [2.1.7.4 `--redactFieldsRegexp <REGEXP>`](#2174---redactfieldsregexp-regexp)
       - [2.1.7.5 `--redactNamspaces`](#2175---redactnamespaces)
   - [2.2 The `anonymongo decrypt` Command](#22-the-anonymongo-decrypt-command)
 - [3. Using Docker](#3-using-docker)
@@ -303,7 +303,7 @@ The `--redactFieldsRegexp` flag allows you to redact field names that match a sp
 - Using this flag will not redact fields that don't match the pattern. It will only redact fields that
   match the pattern, leaving the rest of the fields intact.
 
-The example below redacts all field name either `SSN`, `NHS_ID`, or `NATIONAL_ID` (and no other fields):
+The example below redacts all fields whose name is either `SSN`, `NHS_ID`, or `NATIONAL_ID` (and no other fields!):
 
 ```shell
 anonymongo redact --redactFieldsRegexp '^(SSN|NHS_ID|NATIONAL_ID)$'
