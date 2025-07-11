@@ -217,7 +217,7 @@ cat mongod.log | grep "Slow query" | anonymongo redact --outputFile slow_queries
 You can read from a file and pipe results to stdout by omitting the `--outputFile` flag. For example:
 
 ```shell
-anonymongo redact --outputFile slow_queries.redacted.log | tee slow_queries.redacted.log
+anonymongo redact mongod.log | tee slow_queries.redacted.log
 ```
 
 You can use stdin and stdout together, which is useful for intermediate analysis. For example:
