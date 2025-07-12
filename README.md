@@ -309,7 +309,7 @@ The example below redacts all fields whose name is either `SSN`, `NHS_ID`, or `N
 anonymongo redact --redactFieldsRegexp '^(SSN|NHS_ID|NATIONAL_ID)$'
 ```
 
-Since, it's a regular expression, you can use it to redact fields that match a specific pattern. For example, any field
+Since it's a regular expression, you can use it to redact fields that match a specific pattern. For example, any field
 whose name contains SSN, case-insensitive:
 
 ```shell
