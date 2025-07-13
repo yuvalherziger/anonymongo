@@ -398,7 +398,7 @@ Extract the last 7 days if not provided`
 	})
 
 	// Bind flags to the "redact" subcommand
-	redactionFlags.StringVarP(&replacement, "replacement", "r", "REDACTED", replacementDesc)
+	redactionFlags.StringVarP(&replacement, "replacement", "r", RedactedString, replacementDesc)
 	encryptionFlags.StringVarP(&encryptionKeyFile, "encryptionKeyFile", "q", "./anonymongo.enc.key", encryptionKeyFileDesc)
 	redactionFlags.BoolVarP(&redactNumbers, "redactNumbers", "n", false, redactNumbersDesc)
 	redactionFlags.BoolVarP(&redactBooleans, "redactBooleans", "b", false, redactBooleansDesc)

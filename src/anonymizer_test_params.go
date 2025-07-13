@@ -16,8 +16,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "simple_find.json",
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.foo": "REDACTED",
-				"command.filter.bar": "REDACTED",
+				"command.filter.foo": RedactedString,
+				"command.filter.bar": RedactedString,
 				"nreturned":          float64(1),
 			},
 		},
@@ -26,8 +26,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "find_with_expr.json",
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.$expr.$and.0.$eq.1": "REDACTED",
-				"command.filter.$expr.$and.1.$eq.1": "REDACTED",
+				"command.filter.$expr.$and.0.$eq.1": RedactedString,
+				"command.filter.$expr.$and.1.$eq.1": RedactedString,
 			},
 		},
 		{
@@ -35,8 +35,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "simple_aggregation.json",
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$match.status":              "REDACTED",
-				"command.pipeline.0.$match.createdAt.$lt.$date": "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.status":              RedactedString,
+				"command.pipeline.0.$match.createdAt.$lt.$date": RedactedISODate,
 			},
 		},
 		{
@@ -44,10 +44,10 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "complex_aggregation.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     "REDACTED",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     RedactedString,
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               RedactedISODate,
 				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
-				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         "REDACTED",
+				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         RedactedString,
 				"command.pipeline.2.$project.numericStatus.$cond.then":             float64(0),
 				"command.pipeline.2.$project.numericStatus.$cond.else":             float64(0),
 			},
@@ -67,7 +67,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			ExpectedPaths: map[string]interface{}{
 				"command.updates.0.q._id.$oid":       "000000000000000000000000",
 				"command.updates.0.u.$set.timestamp": float64(0),
-				"command.updates.0.u.$set.foo":       "REDACTED",
+				"command.updates.0.u.$set.foo":       RedactedString,
 				"command.updates.0.u.$set.bar":       false,
 			},
 		},
@@ -76,9 +76,9 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "updateOne.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"command.q._id.$in.0": "REDACTED",
+				"command.q._id.$in.0": RedactedString,
 				"command.u.$set.foo":  float64(0),
-				"command.u.$set.bar":  "REDACTED",
+				"command.u.$set.bar":  RedactedString,
 			},
 		},
 		{
@@ -86,8 +86,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "updateOne.json",
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
-				fmt.Sprintf("command.q.%s.$in.0", HashName("_id")): "REDACTED",
-				fmt.Sprintf("command.u.$set.%s", HashName("bar")):  "REDACTED",
+				fmt.Sprintf("command.q.%s.$in.0", HashName("_id")): RedactedString,
+				fmt.Sprintf("command.u.$set.%s", HashName("bar")):  RedactedString,
 			},
 		},
 		{
@@ -95,13 +95,13 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "inserts.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"command.documents.0.foo":                           "REDACTED",
+				"command.documents.0.foo":                           RedactedString,
 				"command.documents.0.bar":                           false,
-				"command.documents.0.timestamp.$date":               "1970-01-01T00:00:00.000Z",
-				"command.documents.0.val_arr.0":                     "REDACTED",
-				"command.documents.0.emb_doc_arr.0.foo":             "REDACTED",
+				"command.documents.0.timestamp.$date":               RedactedISODate,
+				"command.documents.0.val_arr.0":                     RedactedString,
+				"command.documents.0.emb_doc_arr.0.foo":             RedactedString,
 				"command.documents.0.emb_doc_arr.0.bar":             false,
-				"command.documents.0.emb_doc_arr.0.timestamp.$date": "1970-01-01T00:00:00.000Z",
+				"command.documents.0.emb_doc_arr.0.timestamp.$date": RedactedISODate,
 			},
 		},
 		{
@@ -125,9 +125,9 @@ func AnonymizerTestParams() []RedactTestCase {
 			ExpectedPaths: map[string]interface{}{
 				"command.query.$and.0.name":                 "<VALUE REDACTED>",
 				"command.query.$and.0.active.$ne":           false,
-				"command.query.$and.1.$or.0.cAt.$lte.$date": "1970-01-01T00:00:00.000Z",
-				"command.query.$and.1.$or.1.uAt.$lte.$date": "1970-01-01T00:00:00.000Z",
-				"command.update.$set.uAt.$date":             "1970-01-01T00:00:00.000Z",
+				"command.query.$and.1.$or.0.cAt.$lte.$date": RedactedISODate,
+				"command.query.$and.1.$or.1.uAt.$lte.$date": RedactedISODate,
+				"command.update.$set.uAt.$date":             RedactedISODate,
 			},
 		},
 		{
@@ -135,8 +135,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "in_operator.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.foo.$in.0": "REDACTED",
-				"command.filter.foo.$in.1": "REDACTED",
+				"command.filter.foo.$in.0": RedactedString,
+				"command.filter.foo.$in.1": RedactedString,
 			},
 		},
 		{
@@ -145,7 +145,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.transactions.$elemMatch.merchantId": float64(0),
-				"command.filter.transactions.$elemMatch.location":   "REDACTED",
+				"command.filter.transactions.$elemMatch.location":   RedactedString,
 			},
 		},
 		{
@@ -153,13 +153,13 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "getMore.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"originatingCommand.filter.foo":                                 "REDACTED",
-				"originatingCommand.filter.bar":                                 "REDACTED",
-				"originatingCommand.filter.$or.0.status.$nin.0":                 "REDACTED",
-				"originatingCommand.filter.$or.0.status.$nin.1":                 "REDACTED",
-				"originatingCommand.filter.$or.0.status.$nin.2":                 "REDACTED",
-				"originatingCommand.filter.$or.1.status":                        "REDACTED",
-				"originatingCommand.filter.$or.1.nested\\.stringAttribute":      "REDACTED",
+				"originatingCommand.filter.foo":                                 RedactedString,
+				"originatingCommand.filter.bar":                                 RedactedString,
+				"originatingCommand.filter.$or.0.status.$nin.0":                 RedactedString,
+				"originatingCommand.filter.$or.0.status.$nin.1":                 RedactedString,
+				"originatingCommand.filter.$or.0.status.$nin.2":                 RedactedString,
+				"originatingCommand.filter.$or.1.status":                        RedactedString,
+				"originatingCommand.filter.$or.1.nested\\.stringAttribute":      RedactedString,
 				"originatingCommand.filter.$or.1.nested\\.numericAttribute.$ne": float64(0),
 			},
 		},
@@ -168,10 +168,10 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "getMore_aggregate.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"originatingCommand.pipeline.0.$match.str1":           "REDACTED",
-				"originatingCommand.pipeline.0.$match.str2":           "REDACTED",
-				"originatingCommand.pipeline.0.$match.cAt.$gte.$date": "1970-01-01T00:00:00.000Z",
-				"originatingCommand.pipeline.0.$match.cAt.$lte.$date": "1970-01-01T00:00:00.000Z",
+				"originatingCommand.pipeline.0.$match.str1":           RedactedString,
+				"originatingCommand.pipeline.0.$match.str2":           RedactedString,
+				"originatingCommand.pipeline.0.$match.cAt.$gte.$date": RedactedISODate,
+				"originatingCommand.pipeline.0.$match.cAt.$lte.$date": RedactedISODate,
 				"originatingCommand.pipeline.1.$lookup.from":          "other_coll",
 				"originatingCommand.pipeline.2.$project.other_docs":   float64(0),
 			},
@@ -183,8 +183,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.foo":                              nil,
 				"command.filter.bar":                              nil,
-				fmt.Sprintf("command.filter.%s", HashName("foo")): "REDACTED",
-				fmt.Sprintf("command.filter.%s", HashName("bar")): "REDACTED",
+				fmt.Sprintf("command.filter.%s", HashName("foo")): RedactedString,
+				fmt.Sprintf("command.filter.%s", HashName("bar")): RedactedString,
 			},
 		},
 		{
@@ -194,8 +194,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$match.status":                                           nil,
 				"command.pipeline.0.$match.createdAt.$lt.$date":                              nil,
-				fmt.Sprintf("command.pipeline.0.$match.%s", HashName("status")):              "REDACTED",
-				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashName("createdAt")): "1970-01-01T00:00:00.000Z",
+				fmt.Sprintf("command.pipeline.0.$match.%s", HashName("status")):              RedactedString,
+				fmt.Sprintf("command.pipeline.0.$match.%s.$lt.$date", HashName("createdAt")): RedactedISODate,
 			},
 		},
 		{
@@ -204,9 +204,9 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.$expr.$and.0.$eq.0":             HashName("foo"),
-				"command.filter.$expr.$and.0.$eq.1":             "REDACTED",
+				"command.filter.$expr.$and.0.$eq.1":             RedactedString,
 				"command.filter.$expr.$and.1.$eq.0":             HashName("bar"),
-				"command.filter.$expr.$and.1.$eq.1":             "REDACTED",
+				"command.filter.$expr.$and.1.$eq.1":             RedactedString,
 				"command.sort._id":                              nil,
 				fmt.Sprintf("command.sort.%s", HashName("_id")): float64(-1),
 				// We should also hash field names in the plan summary indiscriminately:
@@ -219,15 +219,15 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$match.$expr.$and.0.$ne.0":                                                  HashName("status"),
-				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                                                  "REDACTED",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                            "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                                                  RedactedString,
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                            RedactedISODate,
 				"command.pipeline.0.$match.$expr.$and.1.$lt.0":                                                  HashName("createdAt"),
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.0.$match.%s.$oid", HashName("organizationId")): "000000000000000000000000",
 				// We have to hash field names in the pipeline stages too now:
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("_id")):       float64(0),
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("name")):      float64(1),
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("createdAt")): float64(1),
-				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.if.$eq.1", HashName("numericStatus")): "REDACTED",
+				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.if.$eq.1", HashName("numericStatus")): RedactedString,
 				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.then", HashName("numericStatus")):     float64(-1),
 				fmt.Sprintf("command.pipeline.2.$project.%s.$cond.else", HashName("numericStatus")):     float64(1),
 			},
@@ -239,13 +239,13 @@ func AnonymizerTestParams() []RedactTestCase {
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$bucket.boundaries":            []float64{float64(1840), float64(1850), float64(1860), float64(1870), float64(1880)},
 				"command.pipeline.0.$bucket.groupBy":               "$year_born",
-				"command.pipeline.0.$bucket.default":               "REDACTED",
+				"command.pipeline.0.$bucket.default":               RedactedString,
 				"command.pipeline.0.$bucket.output.count.$sum":     float64(1),
 				"command.pipeline.1.$count":                        "totalArtists",
 				"command.pipeline.2.$densify.field":                "timestamp",
 				"command.pipeline.2.$densify.range.step":           float64(1),
-				"command.pipeline.2.$densify.range.bounds.0.$date": "1970-01-01T00:00:00.000Z",
-				"command.pipeline.2.$densify.range.bounds.1.$date": "1970-01-01T00:00:00.000Z",
+				"command.pipeline.2.$densify.range.bounds.0.$date": RedactedISODate,
+				"command.pipeline.2.$densify.range.bounds.1.$date": RedactedISODate,
 				"command.pipeline.3.$facet.meta.0.$count":          "total",
 				"command.pipeline.3.$facet.docs.0.$limit":          float64(10),
 				"command.pipeline.3.$facet.docs.1.$skip":           float64(0),
@@ -267,7 +267,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$search.index":      "default",
-				"command.pipeline.0.$search.text.query": "REDACTED",
+				"command.pipeline.0.$search.text.query": RedactedString,
 				"command.pipeline.0.$search.text.path":  "title",
 			},
 		},
@@ -277,15 +277,15 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$search.compound.should.0.text.path":                                                              "type",
-				"command.pipeline.0.$search.compound.should.0.text.query":                                                             "REDACTED",
+				"command.pipeline.0.$search.compound.should.0.text.query":                                                             RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":                                              "category",
-				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.value":                                           true,
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.path":                                            "in_stock",
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.path":                                  "items",
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.path":    "items.tags",
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.path":  "items.name",
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.score.embedded.aggregate":              "mean",
 				"command.pipeline.0.$search.compound.should.2.exists.path":                                                            "quantities.lemons",
@@ -301,16 +301,16 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$search.compound.should.0.text.path":                                                              HashName("type"),
-				"command.pipeline.0.$search.compound.should.0.text.query":                                                             "REDACTED",
+				"command.pipeline.0.$search.compound.should.0.text.query":                                                             RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":                                              HashName("category"),
-				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.value":                                           true,
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.path":                                            HashName("in_stock"),
 				"command.pipeline.0.$search.compound.minimumShouldMatch":                                                              float64(1),
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.path":                                  HashName("items"),
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.path":    HashName("items.tags"),
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.path":  HashName("items.name"),
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.score.embedded.aggregate":              "mean",
 				"command.pipeline.0.$search.compound.should.2.exists.path":                                                            HashName("quantities.lemons"),
@@ -324,8 +324,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "search_meta_facets.json",
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
-				"command.pipeline.0.$searchMeta.facet.operator.range.gte.$date":   "1970-01-01T00:00:00.000Z",
-				"command.pipeline.0.$searchMeta.facet.operator.range.lte.$date":   "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$searchMeta.facet.operator.range.gte.$date":   RedactedISODate,
+				"command.pipeline.0.$searchMeta.facet.operator.range.lte.$date":   RedactedISODate,
 				"command.pipeline.0.$searchMeta.facet.facets.directorsFacet.type": "string",
 				"command.pipeline.0.$searchMeta.facet.facets.directorsFacet.path": "directors",
 				"command.pipeline.0.$searchMeta.facet.facets.yearFacet.type":      "number",
@@ -359,7 +359,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.uuid.$binary.subType": "04",
-				"command.filter.uuid.$binary.base64":  "REDACTED",
+				"command.filter.uuid.$binary.base64":  RedactedString,
 				"planningTimeMicros":                  float64(43226),
 				"keysExamined":                        float64(1),
 				"docsExamined":                        float64(1),
@@ -373,7 +373,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
 				fmt.Sprintf("command.filter.%s.$binary.subType", HashName("uuid")): "04",
-				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  "REDACTED",
+				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  RedactedString,
 				"planningTimeMicros": float64(43226),
 				"keysExamined":       float64(1),
 				"docsExamined":       float64(1),
@@ -397,7 +397,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "error-query.json",
 			Options:   setOptionsRedactedStringsAndNamespaces,
 			ExpectedPaths: map[string]interface{}{
-				"cmd.pipeline.0.$match.foo": "REDACTED",
+				"cmd.pipeline.0.$match.foo": RedactedString,
 				"cmd.aggregate":             HashName("mycollection"),
 				"cmd.$db":                   HashName("mydb"),
 			},
@@ -407,8 +407,8 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "simple_find.json",
 			Options:   setOptionsRedactedStringsAndNamespaces,
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.foo": "REDACTED",
-				"command.filter.bar": "REDACTED",
+				"command.filter.foo": RedactedString,
+				"command.filter.bar": RedactedString,
 				"nreturned":          float64(1),
 				"ns":                 HashName("my_db.my_coll"),
 			},
@@ -421,8 +421,8 @@ func AnonymizerTestParams() []RedactTestCase {
 				"ns":                               HashName("my_db.my_coll"),
 				"command.$db":                      HashName("my_db"),
 				"command.aggregate":                HashName("my_coll"),
-				"command.pipeline.0.$match.status": "REDACTED",
-				"command.pipeline.0.$match.createdAt.$lt.$date": "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.status": RedactedString,
+				"command.pipeline.0.$match.createdAt.$lt.$date": RedactedISODate,
 			},
 		},
 		{
@@ -433,11 +433,11 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.$db":       HashName("my_db"),
 				"command.aggregate": HashName("my_coll"),
 				"ns":                HashName("my_db.my_coll"),
-				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     "REDACTED",
-				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               "1970-01-01T00:00:00.000Z",
+				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     RedactedString,
+				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               RedactedISODate,
 				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
 				"command.pipeline.1.$lookup.from":                                  HashName("another_coll"),
-				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         "REDACTED",
+				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         RedactedString,
 			},
 		},
 		{
@@ -448,12 +448,12 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.$db":                           HashName("my_db"),
 				"command.findAndModify":                 HashName("my_coll"),
 				"ns":                                    HashName("my_db.my_coll"),
-				"command.update.$set.updatedAt.$date":   "1970-01-01T00:00:00.000Z",
+				"command.update.$set.updatedAt.$date":   RedactedISODate,
 				"command.update.$set.updatedBy.$oid":    "000000000000000000000000",
-				"command.update.$set.status":            "REDACTED",
-				"command.update.$addToSet.tags.$each.0": "REDACTED",
-				"command.update.$addToSet.tags.$each.1": "REDACTED",
-				"command.update.$addToSet.tags.$each.2": "REDACTED",
+				"command.update.$set.status":            RedactedString,
+				"command.update.$addToSet.tags.$each.0": RedactedString,
+				"command.update.$addToSet.tags.$each.1": RedactedString,
+				"command.update.$addToSet.tags.$each.2": RedactedString,
 			},
 		},
 		{
@@ -464,7 +464,7 @@ func AnonymizerTestParams() []RedactTestCase {
 				SetRedactedFieldsRegexp("^foo$")
 			},
 			ExpectedPaths: map[string]interface{}{
-				"command.filter.foo": "REDACTED",
+				"command.filter.foo": RedactedString,
 				"command.filter.bar": "another simple string",
 			},
 		},
@@ -477,7 +477,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			},
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.$expr.$and.0.$eq.1": "simple string",
-				"command.filter.$expr.$and.1.$eq.1": "REDACTED",
+				"command.filter.$expr.$and.1.$eq.1": RedactedString,
 			},
 		},
 		{
@@ -491,14 +491,14 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.pipeline.0.$search.compound.should.0.text.path":                                                              "type",
 				"command.pipeline.0.$search.compound.should.0.text.query":                                                             "apple",
 				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.path":                                              "category",
-				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.0.text.query":                                             RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.path":                                            "in_stock",
 				"command.pipeline.0.$search.compound.should.1.compound.must.1.equals.value":                                           true,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.path":                                  "items",
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.path":    "items.tags",
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.must.0.text.query":   RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.path":  "items.name",
-				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": "REDACTED",
+				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.operator.compound.should.0.text.query": RedactedString,
 				"command.pipeline.0.$search.compound.should.1.compound.must.2.embeddedDocument.score.embedded.aggregate":              "mean",
 				"command.pipeline.0.$search.compound.should.2.exists.path":                                                            "quantities.lemons",
 				"command.pipeline.0.$search.compound.should.3.geoShape.relation":                                                      "disjoint",
@@ -515,11 +515,11 @@ func AnonymizerTestParams() []RedactTestCase {
 				SetRedactedFieldsRegexp("^(name|uAt)$")
 			},
 			ExpectedPaths: map[string]interface{}{
-				"command.query.$and.0.name":                 "REDACTED",
+				"command.query.$and.0.name":                 RedactedString,
 				"command.query.$and.0.active.$ne":           true,
 				"command.query.$and.1.$or.0.cAt.$lte.$date": "2025-05-30T09:38:12.155Z",
-				"command.query.$and.1.$or.1.uAt.$lte.$date": "1970-01-01T00:00:00.000Z",
-				"command.update.$set.uAt.$date":             "1970-01-01T00:00:00.000Z",
+				"command.query.$and.1.$or.1.uAt.$lte.$date": RedactedISODate,
+				"command.update.$set.uAt.$date":             RedactedISODate,
 			},
 		},
 	}
@@ -529,7 +529,7 @@ func AnonymizerTestParams() []RedactTestCase {
 // Anonymous functions can be used directly in the test cases,
 // but these are more readable.
 func setOptionsRedactedStrings() {
-	SetRedactedString("REDACTED")
+	SetRedactedString(RedactedString)
 	SetRedactNumbers(false)
 	SetRedactBooleans(false)
 	SetRedactIPs(false)
@@ -539,7 +539,7 @@ func setOptionsRedactedStrings() {
 }
 
 func setOptionsRedactedStringsAndNamespaces() {
-	SetRedactedString("REDACTED")
+	SetRedactedString(RedactedString)
 	SetRedactNumbers(false)
 	SetRedactBooleans(false)
 	SetRedactIPs(false)
@@ -549,7 +549,7 @@ func setOptionsRedactedStringsAndNamespaces() {
 }
 
 func setOptionsRedactedStringsWithEagerRedaction() {
-	SetRedactedString("REDACTED")
+	SetRedactedString(RedactedString)
 	SetRedactNumbers(false)
 	SetRedactBooleans(false)
 	SetRedactIPs(false)
@@ -571,7 +571,7 @@ func setOptionsRedactedAllWithOverride() {
 }
 
 func setOptionsRedactedAll() {
-	SetRedactedString("REDACTED")
+	SetRedactedString(RedactedString)
 	SetRedactNumbers(true)
 	SetRedactBooleans(true)
 	SetRedactIPs(true)
@@ -581,7 +581,7 @@ func setOptionsRedactedAll() {
 }
 
 func setOptionsRedactedIPs() {
-	SetRedactedString("REDACTED")
+	SetRedactedString(RedactedString)
 	SetRedactNumbers(false)
 	SetRedactBooleans(false)
 	SetRedactIPs(true)

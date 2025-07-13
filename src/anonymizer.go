@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	redactedString       = "REDACTED"
+	redactedString       = RedactedString
 	redactNumbers        = false
 	redactBooleans       = false
 	redactIPs            = false
@@ -655,7 +655,7 @@ func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool, isSe
 	closestParentKey = keyPath[len(keyPath)-1]
 	switch closestParentKey {
 	case "$date":
-		return redactString(v.(string), "1970-01-01T00:00:00.000Z")
+		return redactString(v.(string), RedactedISODate)
 	case "$oid":
 		return redactString(v.(string), "000000000000000000000000")
 	}
