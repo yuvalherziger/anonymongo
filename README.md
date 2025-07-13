@@ -217,7 +217,7 @@ cat mongod.log | grep "Slow query" | anonymongo redact --outputFile slow_queries
 You can read from a file and pipe results to stdout by omitting the `--outputFile` flag. For example:
 
 ```shell
-anonymongo redact --outputFile slow_queries.redacted.log | tee slow_queries.redacted.log
+anonymongo redact mongod.log | tee slow_queries.redacted.log
 ```
 
 You can use stdin and stdout together, which is useful for intermediate analysis. For example:
@@ -309,7 +309,7 @@ The example below redacts all fields whose name is either `SSN`, `NHS_ID`, or `N
 anonymongo redact --redactFieldsRegexp '^(SSN|NHS_ID|NATIONAL_ID)$'
 ```
 
-Since, it's a regular expression, you can use it to redact fields that match a specific pattern. For example, any field
+Since it's a regular expression, you can use it to redact fields that match a specific pattern. For example, any field
 whose name contains SSN, case-insensitive:
 
 ```shell
