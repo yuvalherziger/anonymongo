@@ -1,4 +1,3 @@
-// Constants for the application:
 package main
 
 const (
@@ -7,3 +6,5 @@ const (
 	RedactedNumber  = float64(0)
 	RedactedBoolean = false
 )
+
+var TopLevelSearchOperators = []string{"$search", "$searchMeta", "$vectorSearch", "$rankFusion"}

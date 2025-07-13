@@ -522,6 +522,24 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.update.$set.uAt.$date":             RedactedISODate,
 			},
 		},
+		{
+			Name:      "Hybrid search",
+			InputFile: "hybrid_search.json",
+			Options: func() {
+				setOptionsRedactedAll()
+			},
+			ExpectedPaths: map[string]interface{}{
+				"command.pipeline.0.$rankFusion.input.pipelines.searchOne.0.$vectorSearch.index":         "vector_index",
+				"command.pipeline.0.$rankFusion.input.pipelines.searchOne.0.$vectorSearch.path":          "embeddings",
+				"command.pipeline.0.$rankFusion.input.pipelines.searchOne.0.$vectorSearch.queryVector.0": float64(0),
+				"command.pipeline.0.$rankFusion.input.pipelines.searchOne.0.$vectorSearch.numCandidates": float64(500),
+				"command.pipeline.0.$rankFusion.input.pipelines.searchOne.0.$vectorSearch.limit":         float64(20),
+				"command.pipeline.0.$rankFusion.input.pipelines.searchTwo.0.$search.index":               "search_index",
+				"command.pipeline.0.$rankFusion.input.pipelines.searchTwo.0.$search.text.query":          RedactedString,
+				"command.pipeline.0.$rankFusion.input.pipelines.searchTwo.0.$search.text.path":           "bar",
+				"command.pipeline.0.$rankFusion.input.pipelines.searchTwo.1.$limit":                      float64(20),
+			},
+		},
 	}
 }
 
