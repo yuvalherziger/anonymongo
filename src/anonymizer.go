@@ -668,12 +668,12 @@ func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool, isSe
 		return redactString(v.(string), redactedString)
 	case float64, int, int64, json.Number:
 		if redactNumbers {
-			return float64(0)
+			return RedactedNumber
 		}
 		return v
 	case bool:
 		if redactBooleans {
-			return false
+			return RedactedBoolean
 		}
 		return v
 	default:
