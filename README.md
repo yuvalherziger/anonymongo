@@ -93,12 +93,12 @@ download the latest stable release for your OS and architecture (e.g., `anonymon
 
 Here's the full list of the latest stable binaries for your convenience:
 
-- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Darwin_arm64.tar.gz)
-- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Darwin_x86_64.tar.gz)
-- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Windows_x86_64.zip)
-- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Windows_arm64.zip)
-- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Linux_arm64.tar.gz)
-- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.2.0/anonymongo_Linux_x86_64.tar.gz)
+- [macOS M-type chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.3.1/anonymongo_Darwin_arm64.tar.gz)
+- [macOS Intel chip](https://github.com/yuvalherziger/anonymongo/releases/download/1.3.1/anonymongo_Darwin_x86_64.tar.gz)
+- [Windows x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.3.1/anonymongo_Windows_x86_64.zip)
+- [Windows arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.3.1/anonymongo_Windows_arm64.zip)
+- [Linux arm64](https://github.com/yuvalherziger/anonymongo/releases/download/1.3.1/anonymongo_Linux_arm64.tar.gz)
+- [Linux x86_64](https://github.com/yuvalherziger/anonymongo/releases/download/1.3.1/anonymongo_Linux_x86_64.tar.gz)
 
 Extract the downloaded archive and run the `anonymongo` binary. Depending on the OS settings, you may be prompted to trust the program explicitly.
 
@@ -398,12 +398,20 @@ Below is an example of such an element you can append to the parameterized cases
 {
   Name:          "$expr redaction inside $lookup stage",
   InputFile:     "expr_in_lookup_pipeline.json",
-  Options:       setOptionsRedactedStrings,
+  Options:       func () {
+    SetRedactedString(RedactedString)
+    SetRedactNumbers(false)
+    SetRedactBooleans(false)
+    SetRedactIPs(false)
+    SetEagerRedactionPaths([]string{})
+    SetRedactNamespaces(false)
+    SetRedactedFieldsRegexp("")
+  },
   ExpectedPaths: map[string]interface{}{
     // JSON PATH                                              | EXPECTED VALUE
     // ------------------------------------------------------------------------
-    "command.pipeline.0.$match.foo.$id":                        "000000000000000000000000",
-    "command.pipeline.1.$lookup.pipeline.0.$match.$expr.$eq.1": "REDACTED",
+    "command.pipeline.0.$match.foo.$id":                        RedactedObjectID,
+    "command.pipeline.1.$lookup.pipeline.0.$match.$expr.$eq.1": RedactedString,
   },
 }
 ```

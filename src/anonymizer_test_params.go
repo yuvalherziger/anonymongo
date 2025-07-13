@@ -46,7 +46,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			ExpectedPaths: map[string]interface{}{
 				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     RedactedString,
 				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               RedactedISODate,
-				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
+				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": RedactedObjectId,
 				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         RedactedString,
 				"command.pipeline.2.$project.numericStatus.$cond.then":             float64(0),
 				"command.pipeline.2.$project.numericStatus.$cond.else":             float64(0),
@@ -65,7 +65,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			InputFile: "updates.json",
 			Options:   setOptionsRedactedAll,
 			ExpectedPaths: map[string]interface{}{
-				"command.updates.0.q._id.$oid":       "000000000000000000000000",
+				"command.updates.0.q._id.$oid":       RedactedObjectId,
 				"command.updates.0.u.$set.timestamp": float64(0),
 				"command.updates.0.u.$set.foo":       RedactedString,
 				"command.updates.0.u.$set.bar":       false,
@@ -222,7 +222,7 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                                                  RedactedString,
 				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":                                            RedactedISODate,
 				"command.pipeline.0.$match.$expr.$and.1.$lt.0":                                                  HashName("createdAt"),
-				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.0.$match.%s.$oid", HashName("organizationId")): "000000000000000000000000",
+				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.0.$match.%s.$oid", HashName("organizationId")): RedactedObjectId,
 				// We have to hash field names in the pipeline stages too now:
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("_id")):       float64(0),
 				fmt.Sprintf("command.pipeline.1.$lookup.pipeline.1.$project.%s", HashName("name")):      float64(1),
@@ -359,7 +359,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.uuid.$binary.subType": "04",
-				"command.filter.uuid.$binary.base64":  RedactedString,
+				"command.filter.uuid.$binary.base64":  RedactedUUID,
 				"planningTimeMicros":                  float64(43226),
 				"keysExamined":                        float64(1),
 				"docsExamined":                        float64(1),
@@ -373,7 +373,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
 				fmt.Sprintf("command.filter.%s.$binary.subType", HashName("uuid")): "04",
-				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  RedactedString,
+				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  RedactedUUID,
 				"planningTimeMicros": float64(43226),
 				"keysExamined":       float64(1),
 				"docsExamined":       float64(1),
@@ -435,7 +435,7 @@ func AnonymizerTestParams() []RedactTestCase {
 				"ns":                HashName("my_db.my_coll"),
 				"command.pipeline.0.$match.$expr.$and.0.$ne.1":                     RedactedString,
 				"command.pipeline.0.$match.$expr.$and.1.$lt.1.$date":               RedactedISODate,
-				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": "000000000000000000000000",
+				"command.pipeline.1.$lookup.pipeline.0.$match.organizationId.$oid": RedactedObjectId,
 				"command.pipeline.1.$lookup.from":                                  HashName("another_coll"),
 				"command.pipeline.2.$project.numericStatus.$cond.if.$eq.1":         RedactedString,
 			},
@@ -449,7 +449,7 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.findAndModify":                 HashName("my_coll"),
 				"ns":                                    HashName("my_db.my_coll"),
 				"command.update.$set.updatedAt.$date":   RedactedISODate,
-				"command.update.$set.updatedBy.$oid":    "000000000000000000000000",
+				"command.update.$set.updatedBy.$oid":    RedactedObjectId,
 				"command.update.$set.status":            RedactedString,
 				"command.update.$addToSet.tags.$each.0": RedactedString,
 				"command.update.$addToSet.tags.$each.1": RedactedString,
