@@ -476,9 +476,20 @@ var SearchAggregationOperators = func() OrderedMap {
 	vectorSearch.Set("path", FieldName)
 	vectorSearch.Set("queryVector", Redactable)
 
+	rankFusion := orderedmap.NewOrderedMap[string, any]()
+	rankFusionPipelines := orderedmap.NewOrderedMap[string, any]()
+	rankFusionPipelines.Set("pipelines", Pipeline)
+	rankFusion.Set("input", rankFusionPipelines)
+
+	rankFusionCombination := orderedmap.NewOrderedMap[string, any]()
+	rankFusionCombination.Set("weights", FieldName)
+	rankFusion.Set("combination", FieldName)
+	rankFusion.Set("scoreDetails", Redactable)
+
 	agg.Set("$search", search)
 	agg.Set("$searchMeta", search)
 	agg.Set("$vectorSearch", vectorSearch)
+	agg.Set("$rankFusion", rankFusion)
 
 	return agg
 }()

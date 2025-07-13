@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/elliotchance/orderedmap/v3"
@@ -379,6 +380,21 @@ func redactPipelineStage(stage interface{}, redactFieldNames bool, keyPath []str
 					if arr, ok := v.([]any); ok {
 						isSelectivelyRedactable := isRedactableFieldPatternInArray(arr)
 						newMap.Set(redactedKey, redactArrayValues(arr, redactFieldNames, inSearchStage, isSelectivelyRedactable, newKeyPath))
+					} else if vMap, ok := v.(*orderedmap.OrderedMap[string, any]); ok {
+						// Redact each key in the ordered map with redactPipelineStage:
+						newPipelineMap := orderedmap.NewOrderedMap[string, any]()
+						for subEl := vMap.Front(); subEl != nil; subEl = subEl.Next() {
+							subK := subEl.Key
+							subV := subEl.Value
+							if subVArr, ok := subV.([]any); ok {
+								newPipeline := make([]any, len(subVArr))
+								for i, stage := range subVArr {
+									newPipeline[i] = redactPipelineStage(stage, redactFieldNames, []string{}, isInSearchStage(stage))
+								}
+								newPipelineMap.Set(subK, newPipeline)
+							}
+						}
+						newMap.Set(redactedKey, newPipelineMap)
 					} else {
 						newMap.Set(redactedKey, v)
 					}
@@ -685,7 +701,7 @@ func isInSearchStage(stage interface{}) bool {
 	if m, ok := stage.(*orderedmap.OrderedMap[string, any]); ok {
 		for el := m.Front(); el != nil; el = el.Next() {
 			k := el.Key
-			if k == "$search" || k == "$searchMeta" || k == "$vectorSearch" {
+			if slices.Contains(TopLevelSearchOperators, k) {
 				return true
 			}
 		}
