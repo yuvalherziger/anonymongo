@@ -359,7 +359,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStrings,
 			ExpectedPaths: map[string]interface{}{
 				"command.filter.uuid.$binary.subType": "04",
-				"command.filter.uuid.$binary.base64":  RedactedString,
+				"command.filter.uuid.$binary.base64":  RedactedUUID,
 				"planningTimeMicros":                  float64(43226),
 				"keysExamined":                        float64(1),
 				"docsExamined":                        float64(1),
@@ -373,7 +373,7 @@ func AnonymizerTestParams() []RedactTestCase {
 			Options:   setOptionsRedactedStringsWithEagerRedaction,
 			ExpectedPaths: map[string]interface{}{
 				fmt.Sprintf("command.filter.%s.$binary.subType", HashName("uuid")): "04",
-				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  RedactedString,
+				fmt.Sprintf("command.filter.%s.$binary.base64", HashName("uuid")):  RedactedUUID,
 				"planningTimeMicros": float64(43226),
 				"keysExamined":       float64(1),
 				"docsExamined":       float64(1),

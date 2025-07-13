@@ -648,13 +648,20 @@ func reMatchesAnyKeyInPath(keyPath *[]string, pattern *regexp.Regexp) bool {
 }
 
 func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool, isSelectivelyRedactable bool) interface{} {
-	closestParentKey := ""
+	parentKey := ""
+	grandParentKey := ""
+
 	if len(keyPath) == 0 {
-		closestParentKey = ""
+		parentKey = ""
 	} else {
+		if len(keyPath) > 1 {
+			grandParentKey = keyPath[len(keyPath)-2]
+		} else {
+			grandParentKey = ""
+		}
 		op, isOp := getOp(keyPath, isSearchStage)
 		if !isOp {
-			closestParentKey = keyPath[len(keyPath)-1]
+			parentKey = keyPath[len(keyPath)-1]
 		} else {
 			if op == Exempt {
 				return v
@@ -668,12 +675,16 @@ func redactScalarValue(keyPath []string, v interface{}, isSearchStage bool, isSe
 	if returnPlain {
 		return v
 	}
-	closestParentKey = keyPath[len(keyPath)-1]
-	switch closestParentKey {
+	parentKey = keyPath[len(keyPath)-1]
+	switch parentKey {
 	case "$date":
 		return redactString(v.(string), RedactedISODate)
 	case "$oid":
 		return redactString(v.(string), "000000000000000000000000")
+	case "base64":
+		if grandParentKey == "$binary" {
+			return redactString(v.(string), RedactedUUID)
+		}
 	}
 	switch v.(type) {
 	case string:

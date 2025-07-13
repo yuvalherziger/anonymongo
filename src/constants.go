@@ -5,6 +5,9 @@ const (
 	RedactedString  = "REDACTED"
 	RedactedNumber  = float64(0)
 	RedactedBoolean = false
+	RedactedUUID    = "AAAAAAAAAAAAAAAAAAA="
 )
 
-var TopLevelSearchOperators = []string{"$search", "$searchMeta", "$vectorSearch", "$rankFusion"}
+var (
+	TopLevelSearchOperators = []string{"$search", "$searchMeta", "$vectorSearch", "$rankFusion"}
+)
