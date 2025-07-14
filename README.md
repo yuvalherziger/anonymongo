@@ -32,6 +32,7 @@ Main features:
   - [1.1 Homebrew](#11-homebrew)
   - [1.2 Release download](#12-release-download)
   - [1.3 Build from source](#13-build-from-source)
+  - [1.4 Docker](#14-docker)
 - [2. Usage](#2-usage)
   - [2.1 The `anonymongo redact` Command](#21-the-anonymongo-redact-command)
     - [2.1.1 Read from a file](#211-read-from-a-file)
@@ -151,6 +152,13 @@ To build and run `anonymongo` from source, follow these steps:
     ```
 
 For more build options or troubleshooting, see the [Go documentation](https://golang.org/doc/).
+
+---
+
+### 1.4 Docker
+
+If you don't want to install `anonymongo` on your machine, you can run it in a container.
+See [3. Using Docker](#3-using-docker) for more information.
 
 ---
 
