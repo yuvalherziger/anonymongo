@@ -540,6 +540,17 @@ func AnonymizerTestParams() []RedactTestCase {
 				"command.pipeline.0.$rankFusion.input.pipelines.searchTwo.1.$limit":                      float64(20),
 			},
 		},
+		{
+			Name:      "Writes",
+			InputFile: "write.json",
+			Options:   setOptionsRedactedAll,
+			ExpectedPaths: map[string]interface{}{
+				"command.q.timestamp.$lt.$date": RedactedISODate,
+				"command.q.state":               RedactedNumber,
+				"command.u.$set.state":          RedactedNumber,
+				"command.u.$unset.timestamp":    RedactedString,
+			},
+		},
 	}
 }
 
