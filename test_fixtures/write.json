@@ -1,0 +1,90 @@
+{
+  "t": {
+    "$date": "2025-05-31T02:18:01.512+00:00"
+  },
+  "s": "I",
+  "c": "WRITE",
+  "id": 51803,
+  "ctx": "conn8286674",
+  "msg": "Slow query",
+  "attr": {
+    "type": "update",
+    "ns": "mydb.mycoll",
+    "appName": "api-import-ecritures",
+    "command": {
+      "q": {
+        "timestamp": {
+          "$lt": {
+            "$date": "2025-05-31T02:17:59.490Z"
+          }
+        },
+        "state": 4
+      },
+      "u": {
+        "$set": {
+          "state": 1
+        },
+        "$unset": {
+          "timestamp": ""
+        }
+      },
+      "multi": true,
+      "upsert": false
+    },
+    "planSummary": "IXSCAN { state: 1 }",
+    "keysExamined": 265657,
+    "docsExamined": 265657,
+    "nMatched": 0,
+    "nModified": 0,
+    "nUpserted": 0,
+    "numYields": 322,
+    "locks": {
+      "ParallelBatchWriterMode": {
+        "acquireCount": {
+          "r": 323
+        }
+      },
+      "FeatureCompatibilityVersion": {
+        "acquireCount": {
+          "w": 323
+        }
+      },
+      "ReplicationStateTransition": {
+        "acquireCount": {
+          "w": 323
+        }
+      },
+      "Global": {
+        "acquireCount": {
+          "w": 323
+        }
+      },
+      "Database": {
+        "acquireCount": {
+          "w": 323
+        }
+      },
+      "Collection": {
+        "acquireCount": {
+          "w": 323
+        }
+      }
+    },
+    "flowControl": {
+      "acquireCount": 323
+    },
+    "readConcern": {
+      "level": "local",
+      "provenance": "implicitDefault"
+    },
+    "storage": {
+      "data": {
+        "bytesRead": 748829479,
+        "timeReadingMicros": 177184
+      }
+    },
+    "cpuNanos": 815412800,
+    "remote": "127.0.0.1:29218",
+    "durationMillis": 2022
+  }
+}

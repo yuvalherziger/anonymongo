@@ -73,7 +73,7 @@ func RedactMongoLog(jsonStr string) (*orderedmap.OrderedMap[string, any], error)
 	msgVal, _ := entry.Get("msg")
 	c, _ := cVal.(string)
 	msg, _ := msgVal.(string)
-	if c == "COMMAND" || msg == "Slow query" || c == "QUERY" {
+	if c == "COMMAND" || c == "QUERY" || c == "WRITE" || msg == "Slow query" {
 		shouldEagerRedact := false
 		for _, path := range eagerRedactionPaths {
 			s, _ := attr.Get("ns")
